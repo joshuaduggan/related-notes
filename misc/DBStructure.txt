@@ -1,0 +1,37 @@
+Database Structure
+
+notes
+  . id
+  . is_category
+  . name
+  . description
+
+relationships
+  . id
+  . relationship_id
+  . note_id
+
+
+Database Description
+
+relationships
+The midpoint (relationship_id) and one end point of a link. Join two relationships together by sharing a relationship_id to create a complete two way link. Related Notes expects all relationships to be made up of precisely two entries linking to two different notes.
+
+relationships.relationship_id; int
+Each pair of relationships are identified by a common but otherwise unique relationship_id. The Related Notes app generates these by using the id of the first relationships pair to be created.
+
+
+Database SQL Commands
+
+// Delete all relationships containing the specified note. Note that we need to
+// create a temp table to delete while selecting from the same table
+DELETE FROM relationships WHERE relationship_id IN (
+  SELECT relationship_id FROM (
+    SELECT * from relationships WHERE note_id = $noteId
+  ) AS temp
+)
+
+// Get id's of notes that share relationships with this note.
+SELECT note_id FROM relationships WHERE relationship_id IN (
+  SELECT relationship_id FROM relationships WHERE note_id = $noteId
+) AND note_id <> $noteId

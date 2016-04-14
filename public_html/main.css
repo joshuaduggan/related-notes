@@ -1,0 +1,122 @@
+html {
+  height: 100%;
+}
+body {
+	font-family: Verdana, Geneva, sans-serif;
+  background-color: #F6F6F6;
+  margin: 0;
+  height: 100%;
+  position: relative;
+}
+header {
+  min-height: 100px;
+  background-color: #2760AA;
+}
+header, footer, header a, footer a, header a:hover, footer a:hover {
+  color: white;
+}
+header div {
+  padding: 6px 0 0 10px;
+}
+header h1 {
+  margin: 0;
+}
+header h3 {
+  margin-top: 15px;
+}
+#tease-area {
+  background-color: #F6F6F6;
+}
+.tease-box {
+  padding: 5px 10px;
+  margin: 15px 0;
+  min-height: 90px;
+}
+.tease-box .tease-target {
+  font-size: 1.3em;
+  display: block;
+  text-align: center;
+}
+.glyphicon {
+  font-size: 60px;
+  background-color: #428bca;
+  color: #F6F6F6;
+  display: inline-block;
+  padding: 10px;
+  padding-left: 2px;
+}
+.glyphicon:first-child {
+  padding: 10px;
+  padding-right: 2px;
+}
+.icons-title {
+  text-align: center;
+}
+.icons-title h3 {
+  margin-top: 8px;
+}
+section {
+  border-left: 3px solid #2760AA;
+  border-right: 3px solid #2760AA;
+  margin: 15px 0;
+}
+section > * {
+  padding-left: 15px;
+  padding-right: 15px;
+}
+footer {
+  background-color: #2760AA;
+  clear: both;
+  text-align: center;
+  padding: 12px 0 0 0;
+  margin: 0;
+}
+footer p {
+  margin: 0 0 5 0;
+}
+.jd-icon-light { /* figure has natural ratio of 5 wide x 4 high (1.25:1) */
+  display: inline-block;
+  background: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZlcnNpb249JzEuMScgd2lkdGg9JzEyNScgaGVpZ2h0PScxMDAnPjxnIHRyYW5zZm9ybT0ndHJhbnNsYXRlKC0xNi40LC04NjUuMyknPjxwYXRoIGQ9J00gMTUuOTgxMjIxLDkwNi44MzY2NiA1Ny42NDc4OTIsODY1LjE3IGwgODMuMzMzMzI4LDAgMCw4My4zMzMzMyAtNjYuNjY2NjYzLC02Ni42NjY2NiAtMTYuNjY2NjY1LDE2LjY2NjY2IDY2LjY2NjY2OCw2Ni42NjY2NyAtODMuMzMzMzM1LDAgMjQuOTk5OTk3LC0yNSAtMjQuOTk5OTk3LC0yNSAtMjUuMDAwMDA0LDI1IHonIHN0eWxlPSdmaWxsOiNGNkY2RjY7ZmlsbC1vcGFjaXR5OjE7c3Ryb2tlOm5vbmUnIC8+PC9nPjwvc3ZnPg==");
+  background-size: 101%; /* hack to ensure it fills the area */
+}
+.jd-icon-light-header {
+  float: right;
+  height: 100px;
+  width: 125px;
+}
+.jd-icon-light-footer {
+  width: 40px;
+  height: 32px;
+  display: block;
+  margin: 0 auto;
+}
+.target-relatednotes .glyphicon {
+  background-color: #777;
+}
+.target-relatednotes h3 {
+  color: #777;
+}
+.target-jdacc .glyphicon {
+  background-color: #00b045;
+}
+.target-jdacc h3 {
+  color: #00b045;
+}
+.target-photos .glyphicon {
+  background-color: #870092;
+}
+.target-photos h3 {
+  color: #870092;
+}
+.target-mundosunidos .glyphicon {
+  background-color: #E47654;
+}
+.target-mundosunidos h3 {
+  color: #E47654;
+}
+.target-blog .glyphicon {
+  background-color: #AD031F;
+}
+.target-blog h3 {
+  color: #AD031F;
+}

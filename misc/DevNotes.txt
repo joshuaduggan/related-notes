@@ -1,0 +1,15 @@
+Related Notes Dev Notes
+
+The user's userEmail and userPassHash is checked against the db every time a page is presented. The userEmail and userPassHash key/values are kept in the _SESSION but any form of authenticated var is re-done generated every time.
+
+COOKIES
+Session cookie is set by php
+'userEmailSuccessful' is set upon successful login and is used next time the user accesses within 30 days
+
+TO DO
+
+- Notes can't have duplicate names
+
+A test/example Related Notes DB is provided via creation SQL, the user preloaded into it is:
+username: jdoe@mail.com
+password: secret
