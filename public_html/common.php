@@ -1,21 +1,19 @@
 <?php
 define('LOCAL', true);
-define('VERSION', '0.1.10' . (LOCAL ? '-loc' : '-net'));
-define('NET_DB_ADDRESS', 'mysql.joshuaduggan.com');
+define('VERSION', '0.2.1' . (LOCAL ? '-loc' : '-net'));
+define('DB_NAME', 'related_notes_0_2');
+define('DB_HOST', (LOCAL ? 'localhost' : 'mysql.joshuaduggan.com'));
 
 # Requires a php ini file like this:
-# sql_db_username = jsmith
-# sql_db_password = secret
+# db_username = jsmith
+# db_password = secret
 define('LOGIN_INI_FILE', '../resources/logins.ini');
 
 $db = null;
 {
   $dbLogin = parse_ini_file(LOGIN_INI_FILE);
   $db = new mysqli(
-      (LOCAL ? 'localhost' : NET_DB_ADDRESS),
-      $dbLogin['sql_db_username'],
-      $dbLogin['sql_db_password'],
-      'relatednotes');
+      DB_HOST, $dbLogin['db_username'], $dbLogin['db_password'], DB_NAME);
   unset($dbLogin);
 }
 if ($db->connect_error) handleIt($db->connect_error);
@@ -65,15 +63,15 @@ function authenticateUser($pass) {
   // testing from the DB in case one or more instances are doing the same thing.
   while (true) {
     $stmt = $db->prepare(
-        'SELECT id, availableTime FROM users WHERE userEmail = ? LIMIT 1');
-    $stmt->bind_param('s', $_SESSION['userEmail']);
+        'SELECT id, available_time FROM users WHERE user_email = ? LIMIT 1');
+    $stmt->bind_param('s', $_SESSION['user_email']);
     $stmt->execute() or handleIt($stmt->error);
     $res = $stmt->get_result();
     if ($res->num_rows != 1) return false;
     $data = $res->fetch_assoc();
-    if ($data['availableTime'] <= time()) {
+    if ($data['available_time'] <= time()) {
       $db->query('UPDATE users'
-              . ' SET availableTime = ' . (time() + PASSWORD_TEST_WAIT)
+              . ' SET available_time = ' . (time() + PASSWORD_TEST_WAIT)
               . ' WHERE id = ' . $data['id']) or handleIt($db->error);
       break;
     }
@@ -93,18 +91,18 @@ function authenticateUser($pass) {
 }
 
 /**
- * Returns the hashed password for the current session userEmail if there is one,
+ * Returns the hashed password for the current session user_email if there is one,
  * otherwise null.
- * This function will sleep until it's passed the current availableTime in the DB
+ * This function will sleep until it's passed the current available_time in the DB
  */
 function getSessionUserPassHash() {
   global $db;
   if (!isset($_SESSION['userEmail'])) return false;
-  $stmt = $db->prepare('SELECT userPassHash FROM users WHERE userEmail = ? LIMIT 1');
+  $stmt = $db->prepare('SELECT userPassHash FROM users WHERE user_email = ? LIMIT 1');
   $stmt->bind_param('s', $_SESSION['userEmail']);
   $stmt->execute() or handleIt($stmt->error);
   $res = $stmt->get_result();
-  return ($res->num_rows != 1) ? null : $res->fetch_assoc()['userPassHash'];
+  return ($res->num_rows != 1) ? null : $res->fetch_assoc()['user_pass_hash'];
 }
 
 function deleteNote($id) {
@@ -127,9 +125,9 @@ function getSeeAlsoIds($id) {
   global $db;
   $seeAlsoIds = [];
   $res = $db->query(
-      "SELECT note_id FROM relationships WHERE relationship_id IN ("
-    . "SELECT relationship_id FROM relationships WHERE note_id = "
-    . ((integer)$id) . ") AND note_id <> " . ((integer)$id))
+      "SELECT note FROM rel_parts WHERE relationship_id IN ("
+    . "SELECT relationship_id FROM rel_parts WHERE note = "
+    . ((integer)$id) . ") AND note <> " . ((integer)$id))
     or handleIt($db->error);
   while ($curRow = $res->fetch_row()) $seeAlsoIds[] = $curRow[0];
   return $seeAlsoIds;

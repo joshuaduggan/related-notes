@@ -1,7 +1,9 @@
-# Related Notes
+# Related Notes - Descriptive Links
 ### github.com/joshuaduggan/related-notes
 
 Easily create and meaningfully relate notes on the web.
+
+**Version 0.2.1** - Branch that switches the categories/notes structure for notes/"descriptive relations".
 
 **Version 0.1.10** - first pre-release version which is developed around a sub-optimal category/note structure with no information about link types.
 

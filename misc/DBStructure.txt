@@ -1,4 +1,44 @@
-Database Structure
+### NEW Database structure
+
+notes
+- id
+- name
+- description
+
+rel_types
+- id
+- structure (one-to-one), (one-to-many)
+- name
+
+rel_cores
+- id
+- rel_type
+
+rel_legs
+- id
+- rel_core
+- note
+- role
+
+users
+- id
+- user_email
+- user_pass_hash
+- available_time
+
+Valid rel_type.structure values with valid rel_core.role values
+- one-one
+    - NULL
+- one-many
+    - root
+    - NULL
+
+#### Notes
+
+Currently as of 0.2.0 a one-many type relation has many seperate relations to the many note. This is due to the legacy of the previous DB design. In future it may be changed to the seemingly more logical system of haveing a single relation with greater than 2 legs to relate to the "many" notes. I have not done it at this point because there may be advantages to always haveing precisely two legs to each relation and allowing the view of the DB complete say over how the relations are displayed, plus there may be additional complications when there are more than one "one-many" relations pointing to the same "one" note...
+
+
+### OLD Database Structure
 
 notes
   . id
