@@ -107,30 +107,40 @@ function getSessionUserPassHash() {
 
 function deleteNote($id) {
   global $db;
-  $db->query("DELETE FROM notes WHERE id = " . ((integer)$id))
-    or handleIt($db->error);
-  // need to create a temp table to delete while selecting from the same table
+  // delete the relevant records from relations tables and notes table all in
+  // one go. NOTE: This will delete an entire relation if any associated note
+  // is deleted!
   $db->query(
-      "DELETE FROM relationships WHERE relationship_id IN ("
-      . "SELECT relationship_id FROM ("
-        . "SELECT * from relationships WHERE note_id = " . ((integer)$id)
-      . ") AS temp"
-    . ")")
+      'DELETE rel_legs, rel_cores, notes ' .
+        'FROM rel_legs ' .
+          'JOIN rel_cores ' .
+            'ON rel_legs.rel_core = rel_cores.id ' .
+          'JOIN notes ' .
+            'ON rel_legs.note = notes.id ' .
+        'WHERE notes.id = ' . ((integer)$id))
     or handleIt($db->error);
 }
 
-// Build an array of this note's relations, used to check the appropriate
-// categories and see alsos.
-function getSeeAlsoIds($id) {
+/**
+ * Build an array of this note's relations.
+ */
+function getRelatedNotes($XnoteId) {
   global $db;
-  $seeAlsoIds = [];
+  $relatedNoteIds = [];
+  // gets all the cores that are linked from the note, then gets all the notes
+  // that are linked from those cores, then discards all notes which are the
+  // passed id (which would be half since each relation links 2 notes)
   $res = $db->query(
-      "SELECT note FROM rel_parts WHERE relationship_id IN ("
-    . "SELECT relationship_id FROM rel_parts WHERE note = "
-    . ((integer)$id) . ") AND note <> " . ((integer)$id))
+      'SELECT note ' .
+        'FROM rel_legs' .
+        'WHERE rel_core IN' .
+          '(SELECT rel_core' .
+            'FROM rel_legs' .
+            'WHERE note = ' . ((integer)$XnoteId) . ') ' .
+        'AND note <> ' . ((integer)$XnoteId))
     or handleIt($db->error);
-  while ($curRow = $res->fetch_row()) $seeAlsoIds[] = $curRow[0];
-  return $seeAlsoIds;
+  while ($curRow = $res->fetch_row()) $relatedNoteIds[] = $curRow[0];
+  return $relatedNoteIds;
 }
 
 function echoStartOfDoc($title) {

@@ -1,6 +1,16 @@
 <?php
 require_once 'common.php';
 
+/**
+ * GENERAL:
+ * 'X' and 'S' prefixes are used on variables that are identified as being
+ * exploitable or safe respectively. If there's any possibility of PHP injection
+ * or any other attack via passed data the var should be X, it is changed to S
+ * if there is some reason that it certainly is not exploitable. A 'S' val may
+ * be used for an 'X' function or var because Xs are always sanitized. But
+ * never use an X for something that expects an S!
+ */
+
 if (!authenticateSessionUser()) goToLoginAndExit();
 // If we're still executing here we know we have an authenticated session user.
 
@@ -91,7 +101,7 @@ if ($postAttempted) {
   }
 }
 // DONE PROCESSING post submission from this creating or editing. If we've reached
-// this point their either wasn't a post or the was a recoverable error.
+// this point there either wasn't a post or the was a recoverable error.
 
 if (array_key_exists("action", $_GET) && $_GET["action"] == 'delete') {
   if (array_key_exists("id", $_GET)) deleteNote((integer)$_GET['id']);
@@ -101,9 +111,9 @@ if (array_key_exists("action", $_GET) && $_GET["action"] == 'delete') {
 $isNew = !array_key_exists('id', $_GET);
 $Sid = -1;
 
-$UTnameText = '';
-$UTdescriptionText = '';
-$UTisCategory = false;
+$XnameText = '';
+$XdescriptionText = '';
+$XisCategory = false;
 
 if (!$isNew) {
   $Sid = (integer)$_GET['id'];
@@ -112,7 +122,7 @@ if (!$isNew) {
   $stmt->bind_param('i', $Sid);
   $stmt->execute() or handleIt($stmt->error);
   $stmt->store_result();
-  $stmt->bind_result($UTnameText, $UTdescriptionText, $UTisCategory);
+  $stmt->bind_result($XnameText, $XdescriptionText, $XisCategory);
   $stmt->fetch();
   // if the requested note to edit isn't in the DB treat this as a "new".
   $isNew = $stmt->num_rows == 0;
@@ -122,7 +132,7 @@ function buildSeeAlsoCheckboxes($title, $categoriesOnly) {
   global $db;
   global $Sid;
   global $isNew;
-  $seeAlsoIds = $isNew ? [] : getSeeAlsoIds($Sid);
+  $seeAlsoIds = $isNew ? [] : getRelatedNotes($Sid);
   echo "<br /><div>$title<br />\n";
   $res = $db->query('SELECT id,name FROM notes WHERE is_category = '
                   . $categoriesOnly) or handleIt($db->error);
@@ -162,12 +172,12 @@ form {
 <input type="hidden" name="action" value="new" />
 <?php endif; ?>
 <label for="nameText">Name</label><br />
-<input type="text" name="nameText" size="80" value="<?php echo htmlspecialchars($UTnameText); ?>" /><br />
+<input type="text" name="nameText" size="80" value="<?php echo htmlspecialchars($XnameText); ?>" /><br />
 <?php buildSeeAlsoCheckboxes("Categories", 1); ?>
 <label for="descriptionText">Description</label><br />
-<textarea name="descriptionText" cols="80" rows="12"><?php echo htmlspecialchars($UTdescriptionText); ?></textarea><br />
+<textarea name="descriptionText" cols="80" rows="12"><?php echo htmlspecialchars($XdescriptionText); ?></textarea><br />
 <label for="isCategory">Is Category</label>
-<input type="checkbox" name="isCategory" <?php if ($UTisCategory) echo 'checked '; ?>/><br />
+<input type="checkbox" name="isCategory" <?php if ($XisCategory) echo 'checked '; ?>/><br />
 <?php buildSeeAlsoCheckboxes("See Also;", 0); ?>
 <input type="submit" value="Save" />
 <input type="reset" />

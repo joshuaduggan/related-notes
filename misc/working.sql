@@ -1,3 +1,11 @@
+SELECT note 
+  FROM rel_legs
+  WHERE rel_core IN
+    (SELECT rel_core
+      FROM rel_legs
+      WHERE note = '')
+  AND note <> '' 
+
 UPDATE rel_cores 
 INNER JOIN rel_legs ON rel_legs.rel_core = rel_cores.id
 INNER JOIN notes ON notes.id = rel_legs.note
@@ -24,3 +32,19 @@ FROM notes
 JOIN rel_legs ON notes.id = rel_legs.note
 WHERE rel_legs.role = 'root'
 GROUP BY notes.id
+
+DELETE rel_legs, rel_cores, notes
+  FROM rel_legs JOIN rel_cores
+    ON rel_legs.rel_core = rel_cores.id
+  JOIN notes
+    ON rel_legs.note = notes.id
+  WHERE notes.id = "43"
+
+SELECT *
+  FROM rel_legs JOIN rel_cores
+    ON rel_legs.rel_core = rel_cores.id
+  JOIN notes
+    ON rel_legs.note = notes.id
+  WHERE notes.id = "43"
+  
+  
