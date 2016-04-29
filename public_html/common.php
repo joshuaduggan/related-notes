@@ -1,7 +1,7 @@
 <?php
 define('LOCAL', true);
 define('VERSION', '0.2.1' . (LOCAL ? '-loc' : '-net'));
-define('DB_NAME', 'related_notes_0_2');
+define('DB_NAME', 'related_notes_0_2_test');
 define('DB_HOST', (LOCAL ? 'localhost' : 'mysql.joshuaduggan.com'));
 
 # Requires a php ini file like this:
@@ -129,7 +129,7 @@ function getRelatedNotes($XnoteId) {
   $relatedNoteIds = [];
   // gets all the cores that are linked from the note, then gets all the notes
   // that are linked from those cores, then discards all notes which are the
-  // passed id (which would be half since each relation links 2 notes)
+  // original id (which would be half since each relation links 2 notes)
   $res = $db->query(
       'SELECT note ' .
         'FROM rel_legs' .

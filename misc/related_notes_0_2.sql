@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 20, 2016 at 07:23 PM
+-- Generation Time: Apr 29, 2016 at 08:02 PM
 -- Server version: 5.6.16
 -- PHP Version: 5.5.11
 
@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS `notes` (
   `description` text NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `id` (`id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=60 ;
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=61 ;
 
 --
 -- Dumping data for table `notes`
@@ -80,7 +80,8 @@ INSERT INTO `notes` (`id`, `name`, `description`) VALUES
 (56, 'Cloud Computing', 'Server availability or specific online services provided over the Internet. The prime benefit being that there is usually no purchase or management of a physical server required by the user.'),
 (57, 'Azure', 'Microsoft''s cloud computing pure server offering. Available directly as a VM service but perhaps more commonly used as the backbone for most of Microsoft''s other cloud computing products such as Sharepoint, Lync and Office 365.'),
 (58, 'Lync', 'Microsoft''s business oriented messaging/voice/video communication system - Skype for business.'),
-(59, 'Office 365', 'A cloud version of Microsoft Office. Currently provides a subset of features to Office 2013, but is expected to eventually fully replace the more traditional "boxed" Office. It''s direct competitor is Google Apps.');
+(59, 'Office 365', 'A cloud version of Microsoft Office. Currently provides a subset of features to Office 2013, but is expected to eventually fully replace the more traditional "boxed" Office. It''s direct competitor is Google Apps.'),
+(60, 'Related Notes Home', 'This is the "home" note of Related Notes. Gives a place to enter the app and relates to other "entry point" notes in this database.');
 
 -- --------------------------------------------------------
 
@@ -92,7 +93,7 @@ CREATE TABLE IF NOT EXISTS `rel_cores` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `rel_type` int(11) NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=247 ;
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=246 ;
 
 --
 -- Dumping data for table `rel_cores`
@@ -257,15 +258,16 @@ CREATE TABLE IF NOT EXISTS `rel_types` (
   `structure` varchar(101) NOT NULL,
   `name` varchar(101) NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=3 ;
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=4 ;
 
 --
 -- Dumping data for table `rel_types`
 --
 
 INSERT INTO `rel_types` (`id`, `structure`, `name`) VALUES
-(1, 'one-one', 'generic'),
-(2, 'one-many', 'category');
+(1, 'one-one', 'Generic'),
+(2, 'one-many', 'Category'),
+(3, 'one-many', 'Home');
 
 -- --------------------------------------------------------
 

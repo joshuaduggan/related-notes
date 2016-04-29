@@ -1,5 +1,7 @@
 Related Notes Dev Notes
 
+4/25/16 - TODO make all names in the DB Unique and not null.
+
 04/22/16 - 'X' and 'S' prefixes are used on variables that are identified as being exploitable or safe respectively. If there's any possibility of PHP injection or any other attack via passed data the var should be X, it is changed to S if there is some reason that it certainly is not exploitable.
 
 The user's userEmail and userPassHash is checked against the db every time a page is presented. The userEmail and userPassHash key/values are kept in the _SESSION but any form of authenticated var is re-done generated every time.

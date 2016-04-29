@@ -7,7 +7,7 @@ notes
 
 rel_types
 - id
-- structure (one-to-one), (one-to-many)
+- structure
 - name
 
 rel_cores
@@ -27,9 +27,9 @@ users
 - available_time
 
 Valid rel_type.structure values with valid rel_core.role values
-- one-one
+- one-one (Default)
     - NULL
-- one-many
+- one-many (Category, Home)
     - root
     - NULL
 

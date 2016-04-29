@@ -1,3 +1,48 @@
+INSERT INTO rel_cores (rel_type)
+  VALUES ('2');
+INSERT INTO rel_legs (rel_core, note, role)
+  VALUES
+	(LAST_INSERT_ID(), '27', 'root'),
+	(LAST_INSERT_ID(), '28', NULL);
+
+	
+INSERT INTO rel_cores (rel_type)
+  VALUES (' . $ray[$XrelationTypeName] . ')
+
+INSERT INTO rel_legs, (rel_core, note, role)
+  VALUES (' . 
+    $db->last_insert_id . ', ' . 
+    $ray[$XnoteAName] . ', ' ,
+    ($relationTypeStructure == 'one-many' ? 'root' : 'NULL') . ');
+INSERT INTO rel_legs, (rel_core, note)
+  VALUES (' . 
+    $db->last_insert_id . ', ' . 
+    $ray[$XnoteBName] . ');
+
+SELECT rel_legs.rel_core, count(*)
+  FROM rel_legs
+    JOIN rel_cores
+      ON rel_legs.rel_core = rel_cores.id
+    JOIN rel_types
+      ON rel_cores.rel_type = rel_types.id
+  WHERE rel_types.id = ?
+  AND (rel_legs.note = ? OR rel_legs.note = ?)
+  GROUP BY rel_legs.rel_core
+  HAVING count(*) > 1
+
+SELECT rel_legs.rel_core, count(*)
+  FROM rel_legs
+    JOIN rel_cores
+      ON rel_legs.rel_core = rel_cores.id
+    JOIN rel_types
+      ON rel_cores.rel_type = rel_types.id
+  WHERE rel_types.id = 2
+  AND (rel_legs.note = 43 OR rel_legs.note = 15)
+  GROUP BY rel_legs.rel_core
+  HAVING count(*) > 1
+
+
+
 SELECT note 
   FROM rel_legs
   WHERE rel_core IN
