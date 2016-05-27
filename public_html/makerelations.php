@@ -81,11 +81,11 @@ function relateThese($XnoteAName, $XrelationTypeName, $XnoteBName) {
       '    (' .
              $db->insert_id . ', ' .
              $noteIds[0] . ', ' .
-             (($relationTypeStructure == 'one-many') ? '"root"' : 'NULL') .
+             (($relationTypeStructure == 'one-many') ? '"parent"' : 'NULL') .
       '    ), (' .
              $db->insert_id . ', ' .
              $noteIds[1] . ', ' .
-      '      NULL);'
+             (($relationTypeStructure == 'one-many') ? '"child"' : 'NULL'));'
     ) or handleIt($db->error);
 }
 
@@ -96,9 +96,16 @@ function relateThese($XnoteAName, $XrelationTypeName, $XnoteBName) {
 <title>Related Notes - Make Relations</title>
 </head>
 <body>
+
 <?php
-echo relateThese('Azure', 'Category', 'Lync');
-?>
+echo relateThese('Related Notes Home', 'Home', 'Acronym');
+echo relateThese('Related Notes Home', 'Home', 'Client Side Web Language');
+echo relateThese('Related Notes Home', 'Home', 'Server Side Web Language');
+echo relateThese('Related Notes Home', 'Home', 'Cloud Computing');
+echo relateThese('Related Notes Home', 'Home', 'Development Tools');
+echo relateThese('Related Notes Home', 'Home', 'Responsive Design');
+?><br>
+
 <p>end</p>
 </body>
 </html>

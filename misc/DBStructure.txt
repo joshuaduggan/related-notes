@@ -30,10 +30,12 @@ Valid rel_type.structure values with valid rel_core.role values
 - one-one (Default)
     - NULL
 - one-many (Category, Home)
-    - root
-    - NULL
+    - parent
+    - child
 
 #### Notes
+
+Names and descriptions in the DB are not sanitized. They must always be processed for the immediate use, whether it be resubmishion into the DB or display via HTML.
 
 Currently as of 0.2.0 a one-many type relation has many seperate relations to the many note. This is due to the legacy of the previous DB design. In future it may be changed to the seemingly more logical system of haveing a single relation with greater than 2 legs to relate to the "many" notes. I have not done it at this point because there may be advantages to always haveing precisely two legs to each relation and allowing the view of the DB complete say over how the relations are displayed, plus there may be additional complications when there are more than one "one-many" relations pointing to the same "one" note...
 

@@ -1,7 +1,7 @@
 <?php
 define('LOCAL', true);
 define('VERSION', '0.2.1' . (LOCAL ? '-loc' : '-net'));
-define('DB_NAME', 'related_notes_0_2_test');
+define('DB_NAME', 'related_notes_0_2');
 define('DB_HOST', (LOCAL ? 'localhost' : 'mysql.joshuaduggan.com'));
 
 # Requires a php ini file like this:
@@ -203,7 +203,7 @@ EOT;
  */
 function handleIt($errorMessage) {
   if (LOCAL) {
-    echo $errorMessage . "\n";
+    echo 'SQL Error message via handleIt: ' . $errorMessage . "\n";
     die();
   } else {
     echo "Oh dear... the server has experienced a problem. Perhaps you could "

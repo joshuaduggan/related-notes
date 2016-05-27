@@ -1,10 +1,49 @@
+SELECT note.id, note.name, rel_types.name
+  FROM rel_legs
+  JOIN rel_cores
+    ON rel_legs.rel_core = rel_cores.id
+  JOIN rel_types
+    ON rel_cores.rel_type = rel_types.id
+  JOIN notes
+    ON rel_legs.note = notes.id
+  WHERE rel_cores.id IN
+    (SELECT rel_cores.id
+      FROM rel_legs
+      JOIN rel_cores
+        ON rel_legs.rel_core = rel_cores.id
+      JOIN rel_types
+        ON rel_cores.rel_type = rel_types.id
+      WHERE rel_legs.note = '42'
+        AND rel_legs.role = 'parent'
+        AND rel_types.structure = 'one-many'
+      ORDER BY rel_types.id)
+    AND 
+
+UPDATE rel_legs
+  JOIN rel_cores
+    ON rel_legs.rel_core = rel_cores.id
+  JOIN rel_types
+    ON rel_cores.rel_type = rel_types.id
+  SET rel_legs.role = 'child'
+  WHERE rel_legs.role = ''
+    AND rel_types.structure = 'one-many'
+
+SELECT notes.name, rel_cores.id, rel_types.name, rel_legs.role
+  FROM notes
+  JOIN rel_legs
+    ON rel_legs.note = notes.id
+  JOIN rel_cores
+    ON rel_cores.id = rel_legs.rel_core
+  JOIN rel_types
+    ON rel_cores.rel_type = rel_types.id
+  ORDER BY rel_cores.id DESC
+
 INSERT INTO rel_cores (rel_type)
   VALUES ('2');
 INSERT INTO rel_legs (rel_core, note, role)
   VALUES
 	(LAST_INSERT_ID(), '27', 'root'),
 	(LAST_INSERT_ID(), '28', NULL);
-
 	
 INSERT INTO rel_cores (rel_type)
   VALUES (' . $ray[$XrelationTypeName] . ')
@@ -40,8 +79,6 @@ SELECT rel_legs.rel_core, count(*)
   AND (rel_legs.note = 43 OR rel_legs.note = 15)
   GROUP BY rel_legs.rel_core
   HAVING count(*) > 1
-
-
 
 SELECT note 
   FROM rel_legs
@@ -91,5 +128,3 @@ SELECT *
   JOIN notes
     ON rel_legs.note = notes.id
   WHERE notes.id = "43"
-  
-  

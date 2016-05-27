@@ -1,11 +1,11 @@
 -- phpMyAdmin SQL Dump
--- version 4.1.12
+-- version 4.5.1
 -- http://www.phpmyadmin.net
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 29, 2016 at 08:02 PM
--- Server version: 5.6.16
--- PHP Version: 5.5.11
+-- Generation Time: May 09, 2016 at 11:37 PM
+-- Server version: 10.1.10-MariaDB
+-- PHP Version: 5.6.19
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 SET time_zone = "+00:00";
@@ -14,7 +14,7 @@ SET time_zone = "+00:00";
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
 /*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
-/*!40101 SET NAMES utf8 */;
+/*!40101 SET NAMES utf8mb4 */;
 
 --
 -- Database: `related_notes_0_2`
@@ -26,13 +26,11 @@ SET time_zone = "+00:00";
 -- Table structure for table `notes`
 --
 
-CREATE TABLE IF NOT EXISTS `notes` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
+CREATE TABLE `notes` (
+  `id` int(11) NOT NULL,
   `name` varchar(101) NOT NULL,
-  `description` text NOT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `id` (`id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=61 ;
+  `description` text NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 --
 -- Dumping data for table `notes`
@@ -89,11 +87,10 @@ INSERT INTO `notes` (`id`, `name`, `description`) VALUES
 -- Table structure for table `rel_cores`
 --
 
-CREATE TABLE IF NOT EXISTS `rel_cores` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `rel_type` int(11) NOT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=246 ;
+CREATE TABLE `rel_cores` (
+  `id` int(11) NOT NULL,
+  `rel_type` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 --
 -- Dumping data for table `rel_cores`
@@ -141,7 +138,13 @@ INSERT INTO `rel_cores` (`id`, `rel_type`) VALUES
 (239, 2),
 (241, 2),
 (243, 2),
-(245, 2);
+(245, 2),
+(246, 3),
+(247, 3),
+(248, 3),
+(249, 3),
+(250, 3),
+(251, 3);
 
 -- --------------------------------------------------------
 
@@ -149,13 +152,12 @@ INSERT INTO `rel_cores` (`id`, `rel_type`) VALUES
 -- Table structure for table `rel_legs`
 --
 
-CREATE TABLE IF NOT EXISTS `rel_legs` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
+CREATE TABLE `rel_legs` (
+  `id` int(11) NOT NULL,
   `rel_core` int(11) NOT NULL,
   `note` int(11) NOT NULL,
-  `role` varchar(101) NOT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=247 ;
+  `role` varchar(101) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 --
 -- Dumping data for table `rel_legs`
@@ -245,7 +247,19 @@ INSERT INTO `rel_legs` (`id`, `rel_core`, `note`, `role`) VALUES
 (243, 243, 57, ''),
 (244, 243, 54, 'root'),
 (245, 245, 57, ''),
-(246, 245, 56, 'root');
+(246, 245, 56, 'root'),
+(247, 246, 60, 'root'),
+(248, 246, 43, ''),
+(249, 247, 60, 'root'),
+(250, 247, 41, ''),
+(251, 248, 60, 'root'),
+(252, 248, 42, ''),
+(253, 249, 60, 'root'),
+(254, 249, 56, ''),
+(255, 250, 60, 'root'),
+(256, 250, 53, ''),
+(257, 251, 60, 'root'),
+(258, 251, 29, '');
 
 -- --------------------------------------------------------
 
@@ -253,12 +267,11 @@ INSERT INTO `rel_legs` (`id`, `rel_core`, `note`, `role`) VALUES
 -- Table structure for table `rel_types`
 --
 
-CREATE TABLE IF NOT EXISTS `rel_types` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
+CREATE TABLE `rel_types` (
+  `id` int(11) NOT NULL,
   `structure` varchar(101) NOT NULL,
-  `name` varchar(101) NOT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=4 ;
+  `name` varchar(101) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 --
 -- Dumping data for table `rel_types`
@@ -275,13 +288,12 @@ INSERT INTO `rel_types` (`id`, `structure`, `name`) VALUES
 -- Table structure for table `users`
 --
 
-CREATE TABLE IF NOT EXISTS `users` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
+CREATE TABLE `users` (
+  `id` int(11) NOT NULL,
   `user_email` varchar(255) NOT NULL,
   `user_pass_hash` varchar(255) NOT NULL,
-  `available_time` int(11) NOT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=3 ;
+  `available_time` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 --
 -- Dumping data for table `users`
@@ -290,6 +302,70 @@ CREATE TABLE IF NOT EXISTS `users` (
 INSERT INTO `users` (`id`, `user_email`, `user_pass_hash`, `available_time`) VALUES
 (2, 'jdoe@mail.com', '$2y$10$zx0dm/3vWvs5ArpPGobwBufe/SgX7InEvPLtX3RE7pRmiqFeBCzGO', 1460656681);
 
+--
+-- Indexes for dumped tables
+--
+
+--
+-- Indexes for table `notes`
+--
+ALTER TABLE `notes`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `id` (`id`);
+
+--
+-- Indexes for table `rel_cores`
+--
+ALTER TABLE `rel_cores`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `rel_legs`
+--
+ALTER TABLE `rel_legs`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `rel_types`
+--
+ALTER TABLE `rel_types`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `users`
+--
+ALTER TABLE `users`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- AUTO_INCREMENT for dumped tables
+--
+
+--
+-- AUTO_INCREMENT for table `notes`
+--
+ALTER TABLE `notes`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=61;
+--
+-- AUTO_INCREMENT for table `rel_cores`
+--
+ALTER TABLE `rel_cores`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=252;
+--
+-- AUTO_INCREMENT for table `rel_legs`
+--
+ALTER TABLE `rel_legs`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=259;
+--
+-- AUTO_INCREMENT for table `rel_types`
+--
+ALTER TABLE `rel_types`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+--
+-- AUTO_INCREMENT for table `users`
+--
+ALTER TABLE `users`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
