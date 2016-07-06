@@ -204,6 +204,7 @@ EOT;
 function handleIt($errorMessage) {
   if (LOCAL) {
     echo 'SQL Error message via handleIt: ' . $errorMessage . "\n";
+    var_dump(debug_backtrace());
     die();
   } else {
     echo "Oh dear... the server has experienced a problem. Perhaps you could "

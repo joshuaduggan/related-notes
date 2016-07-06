@@ -1,23 +1,30 @@
-SELECT note.id, note.name, rel_types.name
+SELECT rel_legs.note AS noteId
   FROM rel_legs
-  JOIN rel_cores
-    ON rel_legs.rel_core = rel_cores.id
-  JOIN rel_types
-    ON rel_cores.rel_type = rel_types.id
-  JOIN notes
-    ON rel_legs.note = notes.id
+  JOIN rel_cores ON rel_legs.rel_core = rel_cores.id
+  JOIN rel_types ON rel_cores.rel_type = rel_types.id
+  WHERE rel_legs.note = ?
+    AND rel_types.structure = "one-many"
+    AND rel_legs.role = "child"
+  ORDER BY rel_types.id
+
+-- Get a note's related parent notes and their relation name
+SELECT notes.id AS noteId, notes.name AS noteName,
+       rel_types.name AS relTypeName
+  FROM rel_legs
+  JOIN rel_cores ON rel_legs.rel_core = rel_cores.id
+  JOIN rel_types ON rel_cores.rel_type = rel_types.id
+  JOIN notes ON rel_legs.note = notes.id
   WHERE rel_cores.id IN
     (SELECT rel_cores.id
       FROM rel_legs
-      JOIN rel_cores
-        ON rel_legs.rel_core = rel_cores.id
-      JOIN rel_types
-        ON rel_cores.rel_type = rel_types.id
-      WHERE rel_legs.note = '42'
-        AND rel_legs.role = 'parent'
-        AND rel_types.structure = 'one-many'
+      JOIN rel_cores ON rel_legs.rel_core = rel_cores.id
+      JOIN rel_types ON rel_cores.rel_type = rel_types.id
+      WHERE rel_legs.note = ?
+        AND rel_types.structure = "one-many"
+        AND rel_legs.role = "child"
       ORDER BY rel_types.id)
-    AND 
+    AND rel_types.structure = "one-many"
+    AND rel_legs.role = "parent"
 
 UPDATE rel_legs
   JOIN rel_cores

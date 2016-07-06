@@ -3,7 +3,8 @@ require_once 'common.php';
 
 /**
  * If the relation type is of a one-many structure noteA is the root.
- * RETURNS A somewhat descriptive message string if an error was encountered
+ * RETURNS Nothing unless an error occured in which case a somewhat descriptive
+ * message string
  */
 function relateThese($XnoteAName, $XrelationTypeName, $XnoteBName) {
 
@@ -11,10 +12,10 @@ function relateThese($XnoteAName, $XrelationTypeName, $XnoteBName) {
   
   // Check that the notes both exist and get their ids
   $stmt = $db->prepare(
-      'SELECT id ' .
-      '  FROM notes ' .
-      '  WHERE name = ? ' .
-      '  LIMIT 1');
+     'SELECT id
+        FROM notes
+        WHERE name = ?
+        LIMIT 1');
   $noteNames = [$XnoteAName, $XnoteBName];
   $noteIds = [];
   for ($i = 0 ; $i < 2 ; $i++) {
@@ -72,20 +73,31 @@ function relateThese($XnoteAName, $XrelationTypeName, $XnoteBName) {
 
   // Create the relation
   $db->query(
-      'INSERT INTO rel_cores (rel_type) ' .
-      '  VALUES (' . $relationTypeId . ')'
+      'INSERT INTO rel_cores (rel_type) 
+         VALUES (' . $relationTypeId . ')'
     ) or handleIt($db->error);
-  $db->query(
-      'INSERT INTO rel_legs (rel_core, note, role) ' .
-      '  VALUES ' .
-      '    (' .
+echo '[' . 'INSERT INTO rel_legs (rel_core, note, role)
+        VALUES
+          (' .
              $db->insert_id . ', ' .
              $noteIds[0] . ', ' .
              (($relationTypeStructure == 'one-many') ? '"parent"' : 'NULL') .
-      '    ), (' .
+          '), (' .
              $db->insert_id . ', ' .
              $noteIds[1] . ', ' .
-             (($relationTypeStructure == 'one-many') ? '"child"' : 'NULL'));'
+             (($relationTypeStructure == 'one-many') ? '"child"' : 'NULL') . ']';
+  $db->query(
+     'INSERT INTO rel_legs (rel_core, note, role)
+        VALUES
+          (' .
+             $db->insert_id . ', ' .
+             $noteIds[0] . ', ' .
+             (($relationTypeStructure == 'one-many') ? '"parent"' : 'NULL') .
+          '), (' .
+             $db->insert_id . ', ' .
+             $noteIds[1] . ', ' .
+             (($relationTypeStructure == 'one-many') ? '"child"' : 'NULL') .
+          ')'
     ) or handleIt($db->error);
 }
 
@@ -97,13 +109,17 @@ function relateThese($XnoteAName, $XrelationTypeName, $XnoteBName) {
 </head>
 <body>
 
-<?php
+<--?php
 echo relateThese('Related Notes Home', 'Home', 'Acronym');
 echo relateThese('Related Notes Home', 'Home', 'Client Side Web Language');
 echo relateThese('Related Notes Home', 'Home', 'Server Side Web Language');
 echo relateThese('Related Notes Home', 'Home', 'Cloud Computing');
 echo relateThese('Related Notes Home', 'Home', 'Development Tools');
 echo relateThese('Related Notes Home', 'Home', 'Responsive Design');
+?--><br>
+
+<?php
+echo relateThese('Wordpress', 'Uses Language', 'Jetpack');
 ?><br>
 
 <p>end</p>

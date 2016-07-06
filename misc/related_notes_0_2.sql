@@ -3,9 +3,9 @@
 -- http://www.phpmyadmin.net
 --
 -- Host: 127.0.0.1
--- Generation Time: May 27, 2016 at 06:56 PM
--- Server version: 10.1.13-MariaDB
--- PHP Version: 5.6.21
+-- Generation Time: Jun 02, 2016 at 01:40 AM
+-- Server version: 10.1.10-MariaDB
+-- PHP Version: 5.6.19
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 SET time_zone = "+00:00";
@@ -144,7 +144,10 @@ INSERT INTO `rel_cores` (`id`, `rel_type`) VALUES
 (248, 3),
 (249, 3),
 (250, 3),
-(251, 3);
+(251, 3),
+(252, 4),
+(253, 4),
+(254, 4);
 
 -- --------------------------------------------------------
 
@@ -259,7 +262,9 @@ INSERT INTO `rel_legs` (`id`, `rel_core`, `note`, `role`) VALUES
 (255, 250, 60, 'parent'),
 (256, 250, 53, 'child'),
 (257, 251, 60, 'parent'),
-(258, 251, 29, 'child');
+(258, 251, 29, 'child'),
+(259, 254, 37, 'parent'),
+(260, 254, 49, 'child');
 
 -- --------------------------------------------------------
 
@@ -280,7 +285,8 @@ CREATE TABLE `rel_types` (
 INSERT INTO `rel_types` (`id`, `structure`, `name`) VALUES
 (1, 'one-one', 'Generic'),
 (2, 'one-many', 'Category'),
-(3, 'one-many', 'Home');
+(3, 'one-many', 'Home'),
+(4, 'one-many', 'Uses Language');
 
 -- --------------------------------------------------------
 
@@ -350,17 +356,17 @@ ALTER TABLE `notes`
 -- AUTO_INCREMENT for table `rel_cores`
 --
 ALTER TABLE `rel_cores`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=252;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=255;
 --
 -- AUTO_INCREMENT for table `rel_legs`
 --
 ALTER TABLE `rel_legs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=259;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=261;
 --
 -- AUTO_INCREMENT for table `rel_types`
 --
 ALTER TABLE `rel_types`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 --
 -- AUTO_INCREMENT for table `users`
 --

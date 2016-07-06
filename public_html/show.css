@@ -1,0 +1,16 @@
+body {
+	font-family: Verdana, Geneva, sans-serif;
+}
+.type-parent {
+  background-color: #F6F6F6;
+}
+.main-note {
+  background-color: #F6F6F6;
+}
+.child-notes {
+  background-color: #EEE;
+}
+.common-parent-siblings {
+  background-color: #F6F6F6;
+  padding-left: 20px;
+}
