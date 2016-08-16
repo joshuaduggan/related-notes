@@ -1,8 +1,38 @@
 body {
 	font-family: Verdana, Geneva, sans-serif;
 }
+
+.gd-header {
+  grid-area: gd-header;
+}
+.gd-main {
+  grid-area: gd-main;
+}
+.gd-sidebar {
+  grid-area: gd-sidebar;
+}
+.gd-wrap {
+  display: grid;
+  grid-gap: 5px;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-areas:
+    "gd-header gd-header gd-header"
+    "gd-main gd-main gd-sidebar";
+}
+.gd-box {
+  background-color: #BBB;
+}
+
+.rn-title {
+  float: left;
+}
+
+.rn-user-status {
+  float: right;
+}
+
 .type-parent {
-  background-color: #F6F6F6;
+  background-color: #DDF;
 }
 .main-note {
   background-color: #F6F6F6;
@@ -10,7 +40,10 @@ body {
 .child-notes {
   background-color: #EEE;
 }
+.associate-notes {
+  background-color: #FDD;
+}
 .common-parent-siblings {
-  background-color: #F6F6F6;
+  background-color: #DFD;
   padding-left: 20px;
 }

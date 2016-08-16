@@ -16,12 +16,12 @@ if ($loginPosted) {
     $_SESSION['userEmail'] = $_POST['userEmail'];
     if (authenticateUser($_POST['userPass'])) {
       setcookie('userEmailSuccessful', $_POST['userEmail'], time() + THIRTY_DAYS_TIME);
-      redirectAndExit($_SESSION['redirectedFrom']);
+      redirectAndExit($_SESSION['preLoginPage']);
     } else {
       $message .= "Unable to log in, are email and password correct?";
     }
   } else {
-    $message .= "There was an error with the submitted data.";
+    $message .= "There is an issue with the submitted data.";
   }
 }
 

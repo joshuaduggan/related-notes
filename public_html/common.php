@@ -30,7 +30,8 @@ define('PASSWORD_TEST_WAIT', 5);
 // Session vars:
 //   userEmail
 //   dbUserPassHash (the pass hash that was in the db when user logged in)
-//   redirectedFrom (if redirected to login.php or another intermediary page)
+//   preLoginPage (if redirected to login.php or if login.php is a link on this
+//                 page this is set)
 session_start();
 
 function redirectAndExit($uri) {
@@ -39,7 +40,7 @@ function redirectAndExit($uri) {
 }
 
 function goToLoginAndExit() {
-  $_SESSION['redirectedFrom'] = $_SERVER['REQUEST_URI'];
+  $_SESSION['preLoginPage'] = $_SERVER['REQUEST_URI'];
   redirectAndExit('login.php');
 }
 
@@ -56,18 +57,22 @@ function authenticateSessionUser() {
 
 /**
  * Determines whether the passed password verifies with the hash in the DB.
+ * Requires that $_SESSION['userEmail'] be set.
  */
 function authenticateUser($pass) {
+//echo "in authenticateUser\n";
   global $db;
   // first sleep if needed until we're past the available time. Need to continue
   // testing from the DB in case one or more instances are doing the same thing.
   while (true) {
     $stmt = $db->prepare(
         'SELECT id, available_time FROM users WHERE user_email = ? LIMIT 1');
-    $stmt->bind_param('s', $_SESSION['user_email']);
+    $stmt->bind_param('s', $_SESSION['userEmail']);
     $stmt->execute() or handleIt($stmt->error);
     $res = $stmt->get_result();
+//echo '$_SESSION["userEmail"] = ' . $_SESSION["userEmail"] . "\n";
     if ($res->num_rows != 1) return false;
+//echo "b\n";
     $data = $res->fetch_assoc();
     if ($data['available_time'] <= time()) {
       $db->query('UPDATE users'
@@ -79,6 +84,7 @@ function authenticateUser($pass) {
   }
   // authenticate the user.
   $dbUserPassHash = getSessionUserPassHash();
+//echo "$dbUserPassHash = " . $dbUserPassHash . "\n";
   if (!$dbUserPassHash) return false;
   // can't use password_verify because dreamhost is currently on PHP 5.4
   // if (password_verify($pass, $dbUserPassHash)) {
@@ -98,7 +104,7 @@ function authenticateUser($pass) {
 function getSessionUserPassHash() {
   global $db;
   if (!isset($_SESSION['userEmail'])) return false;
-  $stmt = $db->prepare('SELECT userPassHash FROM users WHERE user_email = ? LIMIT 1');
+  $stmt = $db->prepare('SELECT user_pass_hash FROM users WHERE user_email = ? LIMIT 1');
   $stmt->bind_param('s', $_SESSION['userEmail']);
   $stmt->execute() or handleIt($stmt->error);
   $res = $stmt->get_result();

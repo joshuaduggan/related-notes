@@ -1,0 +1,42 @@
+<!doctype html>
+<html>
+<head>
+<style>
+body {
+	font-family: Verdana, Geneva, sans-serif;
+}
+
+.sidebar {
+  grid-area: sidebar;
+}
+
+.content {
+  grid-area: content;
+}
+
+.header {
+  grid-area: header;
+}
+
+.wrapper {
+  display: grid;
+  grid-gap: 10px;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-areas:
+    "header header  header"
+    "content content sidebar";
+}
+.box {
+  background-color: #DDD;
+  padding: 20px;
+}
+</style>
+</head>
+<body>
+<div class="wrapper">
+  <div class="box header">Header</div>
+  <div class="box sidebar">Sidebar</div>
+  <div class="box content">Content</div>
+</div>
+</body>
+</html>
