@@ -1,6 +1,41 @@
-<?php
-require_once 'common.php';
+<!doctype html>
 
+<?php require_once 'common.php'; ?>
+<?php $_SESSION['preLoginPage'] = $_SERVER['REQUEST_URI']; ?>
+
+<html>
+<head>
+<title>Related Notes - Make Relations</title>
+<link rel="stylesheet" href="./show.css" />
+</head>
+<body>
+
+<?php if (array_key_exists('note', $_GET)): // if note value passed ?>
+  <?php $SnoteId = (integer)$_GET['note']; ?>
+  <div class="gd-wrap">
+  
+  <div class='gd-box gd-header'>
+  <h3 class='rn-title'>Related Notes - (name of data/site)</h3>
+  
+  <?php ///////////////////////////////////////////////////////////////////// ?>
+
+  <p class='rn-user-status'>Not logged in <a href='./login.php'>[login]</a></p>
+  </div>
+
+  <div class="gd-box gd-main">
+  <?php showNote($SnoteId); ?>
+  </div>
+  
+  <div class="gd-box gd-sidebar">
+  <?php showParentAndSiblings($SnoteId); ?>
+  <?php showAssociates($SnoteId); ?>
+  </div>
+<?php endif; ?>
+
+</body>
+</html>
+
+<?php
 /**
  * Shows just names of sibling notes of this.
  */
@@ -28,38 +63,45 @@ function showParentAndSiblings($SnoteId) {
         
   // For each of this' parents show all their child notes who's relation to that
   // parent is of the same type as this'.
-  echo "<div class='sibling-notes'>\n";
-  while ($parRelAssoc = $res->fetch_assoc()) {
-    $subRes = $db->query(
-         'SELECT notes.id AS noteId, notes.name AS noteName
-            FROM rel_legs
-            JOIN rel_cores ON rel_legs.rel_core = rel_cores.id
-            JOIN rel_types ON rel_cores.rel_type = rel_types.id
-            JOIN notes ON rel_legs.note = notes.id
-            WHERE rel_cores.id IN
-              (SELECT rel_cores.id
-                FROM rel_legs
-                JOIN rel_cores ON rel_legs.rel_core = rel_cores.id
-                JOIN rel_types ON rel_cores.rel_type = rel_types.id
-                WHERE rel_legs.note = "' . $parRelAssoc['noteId'] . '"
-                  AND rel_types.id = "' . $parRelAssoc['relType'] . '"
-                  AND rel_legs.role = "parent"
-                ORDER BY rel_types.id)
-              AND rel_types.structure = "one-many"
-              AND rel_legs.role = "child"
-              AND rel_legs.note <> "' . $SnoteId . '"') or handleIt($db->error);
-    echo "<div class='type-parent'>\n";
-    echoNote($parRelAssoc['noteId'], $parRelAssoc['noteName']);
-    echo "</div>\n";
-    
-    if ($subRes->num_rows < 1) continue;
-    echo "<div class='common-parent-siblings'>\n";
-    while ($siblingAssoc = $subRes->fetch_assoc()) {
-      echoNote($siblingAssoc['noteId'], $siblingAssoc['noteName']);
-    }
-    echo "</div>\n";
-  }
-  echo "</div>\n";
+  ?>
+  
+  <div class='sibling-notes'>
+    <?php while ($parRelAssoc = $res->fetch_assoc()) : ?>
+      <?php $subRes = $db->query(
+           'SELECT notes.id AS noteId, notes.name AS noteName
+              FROM rel_legs
+              JOIN rel_cores ON rel_legs.rel_core = rel_cores.id
+              JOIN rel_types ON rel_cores.rel_type = rel_types.id
+              JOIN notes ON rel_legs.note = notes.id
+              WHERE rel_cores.id IN
+                (SELECT rel_cores.id
+                  FROM rel_legs
+                  JOIN rel_cores ON rel_legs.rel_core = rel_cores.id
+                  JOIN rel_types ON rel_cores.rel_type = rel_types.id
+                  WHERE rel_legs.note = "' . $parRelAssoc['noteId'] . '"
+                    AND rel_types.id = "' . $parRelAssoc['relType'] . '"
+                    AND rel_legs.role = "parent"
+                  ORDER BY rel_types.id)
+                AND rel_types.structure = "one-many"
+                AND rel_legs.role = "child"
+                AND rel_legs.note <> "' . $SnoteId . '"') or handleIt($db->error); ?>
+      <div class='type-parent'>
+        <?php echoNote($parRelAssoc['noteId'], $parRelAssoc['noteName']); ?>
+      </div>
+      
+      <?php if ($subRes->num_rows < 1) continue; ?>
+      
+      <div class='common-parent-siblings'>
+        <?php
+        while ($siblingAssoc = $subRes->fetch_assoc()) {
+          echoNote($siblingAssoc['noteId'], $siblingAssoc['noteName']);
+        }
+        ?>
+      </div>
+    <?php endwhile; ?>
+  </div>
+  
+  <?php
 }
 
 function showAssociates($SnoteId) {
@@ -84,11 +126,15 @@ function showAssociates($SnoteId) {
           AND notes.id <> "' . $SnoteId . '"')
               or handleIt($db->error);
         
-  echo "<div class='associate-notes'>\n";
-  while ($associateAssoc = $res->fetch_assoc()) {
-    echoNote($associateAssoc['noteId'], $associateAssoc['noteName']);
-  }
-  echo "</div>\n";
+  ?>
+  
+  <div class='associate-notes'>
+  <?php while ($associateAssoc = $res->fetch_assoc()) : ?>
+    <?php echoNote($associateAssoc['noteId'], $associateAssoc['noteName']); ?>
+  <?php endwhile; ?>
+  </div>
+  
+  <?php
 }
 
 /**
@@ -102,10 +148,12 @@ function showNote($SnoteId) {
         FROM notes
         WHERE id = "' . $SnoteId . '"') or handleIt($db->error);
   $mainAssoc = $res->fetch_assoc();
+  ?>
   
-  echo "<div class='main-note'>\n";
-  echoNote($SnoteId, $mainAssoc['name'], $mainAssoc['description']);
+  <div class='main-note'>
+  <?php echoNote($SnoteId, $mainAssoc['name'], $mainAssoc['description']); ?>
   
+  <?php
   // get any child relations that this has as well as the name of their nodes
   $res = $db->query(
      'SELECT notes.id AS noteId, notes.name AS noteName,
@@ -129,105 +177,39 @@ function showNote($SnoteId) {
   $curRelationName = null;
   while ($childAssoc = $res->fetch_assoc()) {
     if ($childAssoc['relTypeName'] != $curRelationName) {
-      if ($curRelationName != null) echo "</div>\n";
-      $curRelationName = $childAssoc['relTypeName'];
-      echo "<div class='child-notes'>\n";
-      echo '<h2>' . htmlspecialchars($curRelationName) . "</h2>\n";
+      ?>
+      
+      <?php if ($curRelationName != null) : ?></div><?php endif; ?>
+      <?php $curRelationName = $childAssoc['relTypeName']; ?>
+      <div class='child-notes'>
+        <h2><?php echo htmlspecialchars($curRelationName); ?></h2>
+        
+      <?php
     }
     echoNote($childAssoc['noteId'], $childAssoc['noteName'],
         $childAssoc['noteDesc']);
   }
   // If any children where echoed we have to end the last relation name div
-  if ($curRelationName != null) echo "</div>\n";
-    
-  echo "</div>\n";
+  ?>
+  
+  <?php if ($curRelationName != null) : ?></div><?php endif; ?>
+  </div>
+  
+  <?php
 }
 
 function echoNote($Sid, $Xname, $Xdescription = null) {
-  echo '<div><a href="./show.php?note=' . $Sid . '">' . htmlspecialchars($Xname) . "</a></div>\n";
-  if ($Xdescription) echo '<p>' . htmlspecialchars($Xdescription) . "</p>\n";
+  ?>
+  
+  <div>
+    <a href="./show.php?note=<?php echo $Sid ?>">
+      <?php echo htmlspecialchars($Xname); ?>
+    </a>
+  </div>
+  <?php if ($Xdescription): ?>
+    <p><?php echo htmlspecialchars($Xdescription); ?></p>
+  <?php endif; ?>
+  <?php
 }
 ?>
-<!doctype html>
-<html>
-<head>
-<title>Related Notes - Make Relations</title>
-<link rel="stylesheet" href="./show.css" />
-</head>
-<body>
 
-<?php
-$_SESSION['preLoginPage'] = $_SERVER['REQUEST_URI'];
-
-// find note value if passed
-if (array_key_exists('note', $_GET)) {
-  $SnoteId = (integer)$_GET['note'];
-  echo '<div class="gd-wrap">';
-  
-  
-  
-  echo "<div class='gd-box gd-header'>\n";
-  echo "<h3 class='rn-title'>Related Notes - (name of data/site)</h3>\n";
-////////////////////////////////////////////////////////////////////////////////
-  echo "<p class='rn-user-status'>Not logged in <a href='./login.php'>[login]</a></p>\n";
-  echo "</div>\n";
-
-  echo '<div class="gd-box gd-main">';
-  showNote($SnoteId);
-  echo '</div>';
-  
-  echo '<div class="gd-box gd-sidebar">';
-  showParentAndSiblings($SnoteId);
-  showAssociates($SnoteId);
-  echo '</div>';
-}
-?>
-</body>
-</html>
-
-<?php
-/**
- * Shows just names of parent notes of this.
- * !!! not currently used 7/13/16 !!!
-function showParentNames($SnoteId) {
-  global $db;
-
-  // get any parent relations that this has as well as the name of their nodes
-  $res = $db->query(
-     'SELECT notes.id AS noteId, notes.name AS noteName,
-             rel_types.name AS relTypeName
-        FROM rel_legs
-        JOIN rel_cores ON rel_legs.rel_core = rel_cores.id
-        JOIN rel_types ON rel_cores.rel_type = rel_types.id
-        JOIN notes ON rel_legs.note = notes.id
-        WHERE rel_cores.id IN
-          (SELECT rel_cores.id
-            FROM rel_legs
-            JOIN rel_cores ON rel_legs.rel_core = rel_cores.id
-            JOIN rel_types ON rel_cores.rel_type = rel_types.id
-            WHERE rel_legs.note = "' . $SnoteId . '"
-              AND rel_types.structure = "one-many"
-              AND rel_legs.role = "child"
-            ORDER BY rel_types.id)
-          AND rel_types.structure = "one-many"
-          AND rel_legs.role = "parent"') or handleIt($db->error);
-  
-  echo "<div class='parent-notes'>\n";
-  
-  $curRelationName = null;
-  while ($childAssoc = $res->fetch_assoc()) {
-    if ($childAssoc['relTypeName'] != $curRelationName) {
-      if ($curRelationName != null) echo "</div>\n";
-      $curRelationName = $childAssoc['relTypeName'];
-      echo "<div class='type-parent'>\n";
-      echo '<h2>' . htmlspecialchars($curRelationName) . "</h2>\n";
-    }
-    echoNote($childAssoc['noteId'], $childAssoc['noteName']);
-  }
-  // If any children where echoed we have to end the last relation name div
-  if ($curRelationName != null) echo "</div>\n";
-    
-  echo "</div>\n";
-}
- */
-?>
