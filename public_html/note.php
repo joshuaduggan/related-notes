@@ -1,12 +1,13 @@
+<?php
+require_once 'common.php';
+$_SESSION['preLoginPage'] = $_SERVER['REQUEST_URI'];
+?>
+
 <!doctype html>
-
-<?php require_once 'common.php'; ?>
-<?php $_SESSION['preLoginPage'] = $_SERVER['REQUEST_URI']; ?>
-
 <html>
 <head>
 <title>Related Notes - Make Relations</title>
-<link rel="stylesheet" href="./show.css" />
+<link rel="stylesheet" href="./note.css" />
 </head>
 <body>
 
@@ -16,10 +17,13 @@
   
   <div class='gd-box gd-header'>
   <h3 class='rn-title'>Related Notes - (name of data/site)</h3>
-  
-  <?php ///////////////////////////////////////////////////////////////////// ?>
-
-  <p class='rn-user-status'>Not logged in <a href='./login.php'>[login]</a></p>
+  <p class='rn-user-status'>
+    <?php if (authenticateSessionUser()) : ?>
+      Logged in as <?php echo htmlspecialchars($_SESSION['userEmail']) ?>
+    <?php else : ?>
+      Not logged in <a href='./login.php'>[login]</a>
+    <?php endif; ?>
+  </p>
   </div>
 
   <div class="gd-box gd-main">
@@ -84,7 +88,8 @@ function showParentAndSiblings($SnoteId) {
                   ORDER BY rel_types.id)
                 AND rel_types.structure = "one-many"
                 AND rel_legs.role = "child"
-                AND rel_legs.note <> "' . $SnoteId . '"') or handleIt($db->error); ?>
+                AND rel_legs.note <> "' . $SnoteId . '"')
+                  or handleIt($db->error); ?>
       <div class='type-parent'>
         <?php echoNote($parRelAssoc['noteId'], $parRelAssoc['noteName']); ?>
       </div>
@@ -125,7 +130,6 @@ function showAssociates($SnoteId) {
             ORDER BY rel_types.id)
           AND notes.id <> "' . $SnoteId . '"')
               or handleIt($db->error);
-        
   ?>
   
   <div class='associate-notes'>

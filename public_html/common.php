@@ -56,23 +56,25 @@ function authenticateSessionUser() {
 }
 
 /**
- * Determines whether the passed password verifies with the hash in the DB.
- * Requires that $_SESSION['userEmail'] be set.
+ * Sets $_SESSION['userEmail'] to the passed userEmail, then determines whether
+ * the passed password verifies with the hash in the DB, if this does it sets
+ * $_SESSION['dbUserPassHash'] to the passed value. A user is considered "logged
+ * in" when php session vars userEmail and dbUserPassHash match a db entry. Any
+ * component of Related Notes can (must) check if a user is logged in by calling
+ * authenticateSessionUser()
  */
-function authenticateUser($pass) {
-//echo "in authenticateUser\n";
+function loginUser($userEmail, $pass) {
   global $db;
+  $_SESSION['userEmail'] = $userEmail;
   // first sleep if needed until we're past the available time. Need to continue
   // testing from the DB in case one or more instances are doing the same thing.
   while (true) {
     $stmt = $db->prepare(
         'SELECT id, available_time FROM users WHERE user_email = ? LIMIT 1');
-    $stmt->bind_param('s', $_SESSION['userEmail']);
+    $stmt->bind_param('s', $userEmail);
     $stmt->execute() or handleIt($stmt->error);
     $res = $stmt->get_result();
-//echo '$_SESSION["userEmail"] = ' . $_SESSION["userEmail"] . "\n";
     if ($res->num_rows != 1) return false;
-//echo "b\n";
     $data = $res->fetch_assoc();
     if ($data['available_time'] <= time()) {
       $db->query('UPDATE users'
@@ -84,15 +86,11 @@ function authenticateUser($pass) {
   }
   // authenticate the user.
   $dbUserPassHash = getSessionUserPassHash();
-//echo "$dbUserPassHash = " . $dbUserPassHash . "\n";
   if (!$dbUserPassHash) return false;
   // can't use password_verify because dreamhost is currently on PHP 5.4
   // if (password_verify($pass, $dbUserPassHash)) {
   if (crypt($pass, $dbUserPassHash) === $dbUserPassHash) {
     $_SESSION['dbUserPassHash'] = $dbUserPassHash;
-    return true;
-  } else {
-    return false;
   }
 }
 

@@ -1,5 +1,14 @@
 Related Notes Dev Notes
 
+8/18/16 - User authentication design:
+2 cookies are stored on the client, one indicates they've logged in before succesfully and contains the email id they used, the other is the php session identifier cookie. The email login cookie is soley used for the user's convenience as it serves to pre-populate their login name (email). The user id must be a valid format email and the password must be within a certain size range.
+There is an ammount of time you have to wait between password guesses, this is enforced by listing the last time a particular user guessed in their db entry. If the user guessed too recently the php sleeps till it's time to test again (PROB NOT BEST METHOD!).
+The session's 'userEmail' var is used to track the current user and which password we should be testing against. This var is set by loginUser(). The session's 'dbUserPassHash' is a copy of what's in the user's db entry and is populated by loginUser if it succesfully tests the password submited by the client against that hash in the db.
+A user is considered "logged in" when php session vars userEmail and dbUserPassHash match a db entry. Any component of RN can (must) check if and which user is logged in by calling authenticateSessionUser
+emails are used as unique user ids (THOUGH THIS CURRENLTY ISN'T ENFORCED MUST CHANGE!)
+NOTE: THIS SYSTEM HAS THE USERS PASS HASH WHEREVER PHP STORES THE SESSION VARS IN ADDITION TO THE USERS TABLE IN THE DB. THIS INCREASES THE PLACES USERNAMES/PASSHASHES CAN BE STOLEN FROM. AT THIS MOMENT THE INCREASED COMPLEXITY OF KEEPING HASHES ONLY IN THE DB AND THUS REDUCING THE ATTACK TARGET IS NOT WORTH IT IN MY OPINION.
+
+
 4/25/16 - TODO make all names in the DB Unique and not null.
 
 04/22/16 - 'X' and 'S' prefixes are used on variables that are identified as being exploitable or safe respectively. If there's any possibility of PHP injection or any other attack via passed data the var should be X, it is changed to S if there is some reason that it certainly is not exploitable.
