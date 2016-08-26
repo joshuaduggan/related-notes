@@ -13,7 +13,7 @@ if (isset($_POST['userEmail'])) {
     if (authenticateSessionUser()) { // check if logged in
       setcookie('userEmailSuccessful', $_POST['userEmail'],
           time() + THIRTY_DAYS_TIME);
-      redirectAndExit($_SESSION['preLoginPage']);
+      redirectAndExit($_SESSION['SlatestNoteView']);
     } else {
       $message .= ' Unable to log in, are email and password correct? ';
     }
@@ -21,9 +21,8 @@ if (isset($_POST['userEmail'])) {
     $message .= ' There is an issue with the submitted data. ';
   }
 }
-?>
 
-<!doctype html>
+?><!doctype html>
 <html><head>
 <title>Related Notes - Login</title>
 <style type="text/css">
@@ -48,7 +47,7 @@ form {
     ?>/><br />
   <input type="submit" value="Login" />
 </form>
-<form method='post' action="<?php echo $_SESSION['preLoginPage']; ?>">
+<form method='post' action="<?php echo $_SESSION['SlatestNoteView']; ?>">
   <input type="submit" value="Cancel" />
 </form>
 <div id="messageBlock">

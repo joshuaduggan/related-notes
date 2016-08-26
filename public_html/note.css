@@ -31,6 +31,17 @@ body {
   float: right;
 }
 
+.rn-link-butt {
+  appearance: button;
+  -moz-appearance: button;
+  -webkit-appearance: button;
+  padding: 5px 10px;
+}
+
+.rn-mod-butt {
+  float: right;
+}
+
 .type-parent {
   background-color: #DDF;
 }
@@ -39,6 +50,10 @@ body {
 }
 .child-notes {
   background-color: #EEE;
+  padding: 0px 15px;
+}
+.child-notes h3 {
+  font-size: 96%;
 }
 .associate-notes {
   background-color: #FDD;

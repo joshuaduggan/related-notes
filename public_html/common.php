@@ -94,6 +94,10 @@ function loginUser($userEmail, $pass) {
   }
 }
 
+function logoutUser() {
+  $_SESSION['userEmail'] = $_SESSION['dbUserPassHash'] = null;
+}
+
 /**
  * Returns the hashed password for the current session user_email if there is one,
  * otherwise null.
