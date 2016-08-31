@@ -12,10 +12,11 @@ require_once 'common.php';
  */
  
 /**
- * The possible modes of this page, determined by the submitted paramaters
+ * The possible modes of this page, determined by the submitted parameters
  * 
  * SHOW_NOTE:
  *   GET
+ *     [mode='show_note'] (not required, default behavior)
  *     note=(note id)
  * SHOW_EDITOR:
  *   GET
@@ -36,59 +37,77 @@ require_once 'common.php';
  *     note=(note id)
  *     nameText=(new text)
  *     descriptionText=(new text)
+ * SAVE_NEW: (then SHOW_NOTE)
+ *   POST
+ *     mode='save_new'
+ *     nameText=(new text)
+ *     descriptionText=(new text)
  */
-const SHOW_NOTE = 1;
-const SHOW_EDITOR = 2;
-const LOGOUT = 3;
-const DELETE_NOTE = 4;
-const SAVE_EDITING = 5;
-$mode = 0;
+const SHOW_NOTE = 'show_note';
+const SHOW_EDITOR = 'show_editor';
+const LOGOUT = 'logout';
+const DELETE_NOTE = 'delete_note';
+const SAVE_EDITING = 'save_editing';
+const SAVE_NEW = 'save_new';
+// SET ONLY ONCE in the following ifelif/switch statement
+$mode = -1;
+// set only if this page isn't to display directly but to optionally show a
+// message then to forward to itself to display anew.
+$nextMode = -1;
+$errorMsg = null;
 
-////////////////////////////////////////////////////////////////////////////////
-// figure out what mode we are in then validate the params for that mode....
-// ... then code the SAVE_EDITING mode to start things off
-
-if (array_key_exists('mode', $_GET)) {
-  switch ($_GET['mode']) {
-    case 'show_editor': $mode = SHOW_EDITOR; break;
-    case 'logout': $mode = LOGOUT; break;
-    case 'delete_note': $mode = DELETE_NOTE; break;
-    case 'save_editing': $mode = SAVE_EDITING; break;
-    default: $mode = SHOW_NOTE; // should only get here if mode param is wrong
+// figure out what mode we are in then validate the params for that mode
+if (array_key_exists('mode', $_REQUEST)) {
+  switch ($_REQUEST['mode']) {
+    case SHOW_EDITOR:
+    case LOGOUT:
+    case DELETE_NOTE:
+    case SAVE_EDITING:
+    case SAVE_NEW:
+      $mode = $_REQUEST['mode'];
+      break;
+    default: // should only get here if mode param is wrong
+      $mode = SHOW_NOTE;
   }
 } else $mode = SHOW_NOTE;
 
-// put mode specific init/pre display code here, note that SHOW_NOTE is in a
-// seperate switch because some of the modes here revert to it after their
-// specific actions are taken.
+// Put mode specific init/pre display code here.
 switch ($mode) {
-  case SHOW_EDITOR:
-    //...
-    break;
   case LOGOUT:
     logoutUser();
-    $mode = SHOW_NOTE;
+    $nextMode = SHOW_NOTE;
     break;
   case DELETE_NOTE:
-    ////////////////////////////////////////////////////////
-    $mode = SHOW_NOTE;
+    // !!! incomplete !!!
+    $nextMode = SHOW_NOTE;
     break;
   case SAVE_EDITING:
-    ////////////////////////////////////////////////////////
-    $mode = SHOW_NOTE;
-    break;
-}
-switch ($mode) {
-  case SHOW_NOTE:
-    //...
+  case SAVE_NEW:
+    if (authenticateSessionUser()) {
+      $errorMsg = savePostedNoteToDb($mode);
+      $nextMode = ($errorMsg) ? SHOW_EDITOR : SHOW_NOTE;
+    } else {
+      $errorMsg = ' You are not logged in, edit not saved!';
+      $nextMode = SHOW_NOTE;
+    }
     break;
 }
 
+$SnoteId = (array_key_exists('note', $_REQUEST))
+             ? (integer)$_REQUEST['note']
+             : getDefaultNoteId();
+
 // The page that should be returned to after going to a intermediary page like
 // login.
-$_SESSION['SlatestNoteView'] = $_SERVER['SCRIPT_NAME'];
-if (array_key_exists('note', $_GET))
-  $_SESSION['SlatestNoteView'] .= '?note=' . (integer)$_GET['note'];
+$_SESSION['SlatestNoteView'] = $_SERVER['SCRIPT_NAME'] . '?note=' . $SnoteId;
+
+$nextUri = null;
+if ($nextMode == SHOW_NOTE || $nextMode == SHOW_EDITOR) {
+  $nextUri = $_SESSION['SlatestNoteView'];
+  $nextUri .= ($nextMode == SHOW_EDITOR) ? '&mode=' . SHOW_EDITOR : '';
+  if (!$errorMsg) redirectAndExit($nextUri);
+  // else see body below...
+}
 
 ?><!doctype html>
 <html>
@@ -97,36 +116,38 @@ if (array_key_exists('note', $_GET))
 <link rel="stylesheet" href="./note.css" />
 </head>
 <body>
+<div class="gd-wrap">
+<?php if (!$errorMsg): // no error show this page! ?>
 
-<?php
-if (array_key_exists('note', $_GET)):
-  $SnoteId = (integer)$_GET['note'];
-  ?>
-  <div class="gd-wrap">
-  
   <div class='gd-box gd-header'>
-  <h2 class='rn-title'>Related Notes - (name of data/site)</h2>
-  <p class='rn-user-status'>
-    <?php if (authenticateSessionUser()) : ?>
-      Logged in as <?php echo htmlspecialchars($_SESSION['userEmail']) ?>
-      <a class='rn-link-butt' href='<?php
-          echo $_SESSION['SlatestPrimaryPage'] . '&mode=logout'; ?>'>Logout</a>
-    <?php else : ?>
-      Not logged in <a class='rn-link-butt' href='./login.php'>Login</a>
-    <?php endif; ?>
-  </p>
+    <h2 class='rn-title'>Related Notes - (name of data/site)</h2>
+    <p class='rn-user-status'>
+      <?php if (authenticateSessionUser()) : ?>
+        Logged in as <?php echo htmlspecialchars($_SESSION['userEmail']) ?>
+        <a class='rn-link-butt' href='<?php
+            echo $_SESSION['SlatestNoteView'] . '&mode=logout'; ?>'>Logout</a>
+      <?php else : ?>
+        Not logged in <a class='rn-link-butt' href='./login.php'>Login</a>
+      <?php endif; ?>
+    </p>
   </div>
 
   <div class="gd-box gd-main">
-  <?php showNote($SnoteId); ?>
+    <?php showNote($SnoteId); ?>
+  </div>
+
+  <div class="gd-box gd-sidebar">
+    <?php showParentAndSiblings($SnoteId); ?>
+    <?php showAssociates($SnoteId); ?>
   </div>
   
-  <div class="gd-box gd-sidebar">
-  <?php showParentAndSiblings($SnoteId); ?>
-  <?php showAssociates($SnoteId); ?>
-  </div>
-<?php endif; ?>
+<?php else: // show the error and provide continue to this again ?>
 
+  <p><?php echo $errorMsg; ?></p>
+  <p><a href='<?php echo $nextUri; ?>'>Continue</a></p>
+  
+<?php endif; ?>
+</div>
 </body>
 </html>
 
@@ -300,25 +321,28 @@ function printFullNote($Sid, $Xname, $isMain, $Xdescription = null) {
   $isAuthenticated = authenticateSessionUser();
   ?>
   <?php if ($isMain && $mode == SHOW_EDITOR && $isAuthenticated): ?>
-    <form method='post'>
+    <form method='post' action='<?php
+          // this is required because with the change to post old get params
+          // arn't stripped if the action is left empty or referring to self.
+          echo $_SERVER['SCRIPT_NAME']; ?>'>
       <input type="hidden" name="mode" value="save_editing" />
       <input type="hidden" name="note" value="<?php echo $Sid; ?>" />
-      <input type="text" name="nameText" size="80" value="<?php
+      <input type="text" name="name" size="80" value="<?php
           echo htmlspecialchars($Xname); ?>" />
-      <textarea name="descriptionText" cols="80" rows="12"><?php
+      <textarea name="description" cols="80" rows="12"><?php
           echo ($Xdescription) ? htmlspecialchars($Xdescription) : '';
           ?></textarea>
       <input type="submit" value="Save" />
       <input type="reset" />
     </form>
     <form onsubmit="return confirm('Really delete this note?');">
-      <input type="hidden" name="mode" value="delete_note" />
-      <input type="hidden" name="note" value="<?php
-        //?????????????????????????????????????????????????????????????// ?>" />
+      <input type="hidden" name="mode" value="<?php echo DELETE_NOTE; ?>" />
+      <input type="hidden" name="note" value="<?php //?????????????????// ?>" />
       <input type="hidden" name="note_to_delete" value="<?php echo $Sid; ?>" />
       <input type="submit" value="Delete" />
     </form>
-    <form action="#?note=<?php echo $Sid; ?>">
+    <form action="<?php echo $_SERVER['SCRIPT_NAME']; ?>">
+      <input type="hidden" name="note" value="<?php echo $Sid; ?>" />
       <input type="submit" value="Cancel" />
     </form>
 
@@ -349,5 +373,85 @@ function printShortNote($Sid, $Xname) {
   </div>
   <?php
 }
-?>
 
+/**
+ * mode must be SAVE_EDITING or SAVE_NEW
+ * if mode is SAVE_EDITING post must contain: 
+ *     note=(id), name=(text), description=(text)
+ * or if mode is SAVE_NEW post must contain: 
+ *     name=(text), description=(text)
+ *
+ * Returns: String problem message if somethings wrong with input data and
+ * nothing was written
+ */
+function savePostedNoteToDb($mode) {
+  global $db;
+  $SnoteId = -1;
+  
+  // VALIDATE THE $_POST {{{
+  $postProblemMsg = null;
+  $postOk = array_key_exists('name', $_POST)
+         && strlen($_POST['name']) <= MAX_NAME_LENGTH
+         && array_key_exists('description', $_POST)
+         && strlen($_POST['description']) <= MAX_DESCRIPTION_LENGTH;
+  if ($postOk && $mode == SAVE_EDITING) {
+    if (array_key_exists('note', $_POST)) {
+      $SnoteId = (integer)$_POST['note'];
+      // Check that the note to edit already exists, also confirming that the id
+      // is valid.
+      $postOk = $db->query("SELECT id FROM notes WHERE id = '$SnoteId'")
+                  ->num_rows == 1;
+    } else $postOk = false;
+  }
+  // Ensure the submitted name isn't a different note already in the db.
+  if ($postOk) {
+    $selStr = ($mode == SAVE_NEW)
+        ? 'SELECT id FROM notes WHERE name = ? LIMIT 1'
+        : "SELECT id FROM notes WHERE name = ? AND id <> '$SnoteId' LIMIT 1";
+    $stmt = $db->prepare($selStr);
+    $stmt->bind_param('s', $_POST['name']);
+    $stmt->execute() or handleIt($stmt->error);
+    $stmt->store_result();
+    $postOk = $stmt->num_rows == 0;
+    if (!$postOk) {
+      $postProblemMsg .= ' The name submitted is already used by another note. ';
+    }
+  }
+  // }}} DONE VALIDATING THE $_POST.
+
+  // send the new/edit to the db
+  if ($postOk) {
+    $stmt;
+    if ($mode == SAVE_EDITING) {
+      $stmt = $db->prepare('UPDATE notes '
+                         . 'SET name = ?, description = ? '
+                         . 'WHERE id = ?');
+      $stmt->bind_param('ssi', $_POST['name'], $_POST['description'], $SnoteId);
+    } else {
+      $stmt = $db->prepare('INSERT INTO notes (name, description) '
+                         . 'VALUES (?, ?)');
+      $stmt->bind_param('ss', $_POST['name'], $_POST['description']);
+    }
+    $stmt->execute() or handleIt($stmt->error);
+  
+  // There was an issue with the posted data.
+  } else {
+    $postProblemMsg .= ' There was a problem processing the submitted data. Please check it\'s validity and try again. ';
+    return $postProblemMsg;
+  }
+}
+
+/**
+ * Currently no default note functionality is available, the test db
+ * implementation has the concept of a "home" parent note but at the moment
+ * that's not a type understood by RN.
+ * returns: the id of the latest note added to the DB.
+ */
+function getDefaultNoteId() {
+  global $db;
+  $res = $db->query(
+      'SELECT MAX(id) AS max_id
+       FROM notes') or handleIt($db->error);
+  return $res->fetch_assoc()['max_id'];
+}
+?>
