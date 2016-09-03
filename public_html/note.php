@@ -18,9 +18,13 @@ require_once 'common.php';
  *   GET
  *     [mode='show_note'] (not required, default behavior)
  *     note=(note id)
- * SHOW_EDITOR:
+ * TEXT_EDITOR:
  *   GET
- *     mode='show_editor'
+ *     mode='text_editor'
+ *     note=(note id)
+ * REL_EDITOR:
+ *   GET
+ *     mode='rel_editor'
  *     note=(note id)
  * LOGOUT: (then SHOW_NOTE)
  *   GET
@@ -31,9 +35,15 @@ require_once 'common.php';
  *     mode='delete_note'
  *     note=(note id)
  *     note_to_delete=(note id)
- * SAVE_EDITING: (then SHOW_NOTE)
+ * SAVE_REL_EDIT: (then REL_EDITOR)
+ *   GET
+ *     mode='save_rel_edit'
+ *     new_rel_note=(note id)
+ *     new_rel_type=(rel type id)
+ *     is_this_note_parent='true' || ''
+ * SAVE_TEXT_EDIT: (then SHOW_NOTE)
  *   POST
- *     mode='save_editing'
+ *     mode='save_text_edit'
  *     note=(note id)
  *     nameText=(new text)
  *     descriptionText=(new text)
@@ -44,10 +54,12 @@ require_once 'common.php';
  *     descriptionText=(new text)
  */
 const SHOW_NOTE = 'show_note';
-const SHOW_EDITOR = 'show_editor';
+const TEXT_EDITOR = 'text_editor';
+const REL_EDITOR = 'rel_editor';
 const LOGOUT = 'logout';
 const DELETE_NOTE = 'delete_note';
-const SAVE_EDITING = 'save_editing';
+const SAVE_REL_EDIT = 'save_rel_edit';
+const SAVE_TEXT_EDIT = 'save_text_edit';
 const SAVE_NEW = 'save_new';
 // SET ONLY ONCE in the following ifelif/switch statement
 $mode = -1;
@@ -59,10 +71,12 @@ $errorMsg = null;
 // figure out what mode we are in then validate the params for that mode
 if (array_key_exists('mode', $_REQUEST)) {
   switch ($_REQUEST['mode']) {
-    case SHOW_EDITOR:
+    case TEXT_EDITOR:
+    case REL_EDITOR:
     case LOGOUT:
     case DELETE_NOTE:
-    case SAVE_EDITING:
+    case SAVE_REL_EDIT:
+    case SAVE_TEXT_EDIT:
     case SAVE_NEW:
       $mode = $_REQUEST['mode'];
       break;
@@ -70,6 +84,10 @@ if (array_key_exists('mode', $_REQUEST)) {
       $mode = SHOW_NOTE;
   }
 } else $mode = SHOW_NOTE;
+
+$SnoteId = (array_key_exists('note', $_REQUEST))
+             ? (integer)$_REQUEST['note']
+             : getDefaultNoteId();
 
 // Put mode specific init/pre display code here.
 switch ($mode) {
@@ -81,30 +99,35 @@ switch ($mode) {
     // !!! incomplete !!!
     $nextMode = SHOW_NOTE;
     break;
-  case SAVE_EDITING:
+  case SAVE_REL_EDIT:
+    if (authenticateSessionUser()) {
+      $errorMsg = saveGettedRelToDb();
+    } else $errorMsg = ' You are not logged in, relation not saved! ';
+    $nextMode = ($errorMsg) ? SHOW_NOTE : REL_EDITOR;
+    break;
+  case SAVE_TEXT_EDIT:
   case SAVE_NEW:
     if (authenticateSessionUser()) {
       $errorMsg = savePostedNoteToDb($mode);
-      $nextMode = ($errorMsg) ? SHOW_EDITOR : SHOW_NOTE;
+      $nextMode = ($errorMsg) ? TEXT_EDITOR : SHOW_NOTE;
     } else {
-      $errorMsg = ' You are not logged in, edit not saved!';
+      $errorMsg = ' You are not logged in, edit not saved! ';
       $nextMode = SHOW_NOTE;
     }
     break;
 }
-
-$SnoteId = (array_key_exists('note', $_REQUEST))
-             ? (integer)$_REQUEST['note']
-             : getDefaultNoteId();
 
 // The page that should be returned to after going to a intermediary page like
 // login.
 $_SESSION['SlatestNoteView'] = $_SERVER['SCRIPT_NAME'] . '?note=' . $SnoteId;
 
 $nextUri = null;
-if ($nextMode == SHOW_NOTE || $nextMode == SHOW_EDITOR) {
+if ($nextMode == SHOW_NOTE ||
+    $nextMode == TEXT_EDITOR ||
+    $nextMode == REL_EDITOR) {
   $nextUri = $_SESSION['SlatestNoteView'];
-  $nextUri .= ($nextMode == SHOW_EDITOR) ? '&mode=' . SHOW_EDITOR : '';
+  if ($nextMode == TEXT_EDITOR) $nextUri .= '&mode=' . TEXT_EDITOR;
+  if ($nextMode == REL_EDITOR) $nextUri .= '&mode=' . REL_EDITOR;
   if (!$errorMsg) redirectAndExit($nextUri);
   // else see body below...
 }
@@ -318,32 +341,34 @@ function showNote($SnoteId) {
 
 function printFullNote($Sid, $Xname, $isMain, $Xdescription = null) {
   global $mode;
+  global $db;
   $isAuthenticated = authenticateSessionUser();
   ?>
-  <?php if ($isMain && $mode == SHOW_EDITOR && $isAuthenticated): ?>
+  <?php if ($isMain && $mode == TEXT_EDITOR && $isAuthenticated): ?>
     <form method='post' action='<?php
           // this is required because with the change to post old get params
           // arn't stripped if the action is left empty or referring to self.
           echo $_SERVER['SCRIPT_NAME']; ?>'>
-      <input type="hidden" name="mode" value="save_editing" />
+      <input type="hidden" name="mode" value="<?php echo SAVE_TEXT_EDIT; ?>" />
       <input type="hidden" name="note" value="<?php echo $Sid; ?>" />
       <input type="text" name="name" size="80" value="<?php
           echo htmlspecialchars($Xname); ?>" />
       <textarea name="description" cols="80" rows="12"><?php
           echo ($Xdescription) ? htmlspecialchars($Xdescription) : '';
           ?></textarea>
-      <input type="submit" value="Save" />
+      <br />
+      <input type="submit" />
       <input type="reset" />
+    </form>
+    <form action="<?php echo $_SERVER['SCRIPT_NAME']; ?>">
+      <input type="hidden" name="note" value="<?php echo $Sid; ?>" />
+      <input type="submit" value="Cancel" />
     </form>
     <form onsubmit="return confirm('Really delete this note?');">
       <input type="hidden" name="mode" value="<?php echo DELETE_NOTE; ?>" />
       <input type="hidden" name="note" value="<?php //?????????????????// ?>" />
       <input type="hidden" name="note_to_delete" value="<?php echo $Sid; ?>" />
       <input type="submit" value="Delete" />
-    </form>
-    <form action="<?php echo $_SERVER['SCRIPT_NAME']; ?>">
-      <input type="hidden" name="note" value="<?php echo $Sid; ?>" />
-      <input type="submit" value="Cancel" />
     </form>
 
   <?php else: ?>
@@ -352,14 +377,66 @@ function printFullNote($Sid, $Xname, $isMain, $Xdescription = null) {
         <?php echo htmlspecialchars($Xname); ?>
       </a>
     </h3>
-    <?php if ($isMain && $isAuthenticated): ?>
+    <?php if ($isMain && $mode != REL_EDITOR && $isAuthenticated): ?>
       <a class='rn-mod-butt rn-link-butt'href='<?php echo
-          $_SERVER['SCRIPT_NAME'] . '?note=' . $Sid . '&mode=show_editor';
+          $_SERVER['SCRIPT_NAME'] . '?note=' . $Sid . '&mode=' . TEXT_EDITOR;
           ?>'>Edit</a>
+      <a class='rn-mod-butt rn-link-butt'href='<?php echo
+          $_SERVER['SCRIPT_NAME'] . '?note=' . $Sid . '&mode=' . REL_EDITOR;
+          ?>'>Relate</a>
     <?php endif; ?>
     <?php if ($Xdescription): ?>
       <p><?php echo htmlspecialchars($Xdescription); ?></p>
     <?php endif; ?>
+
+    <?php if ($isMain && $mode == REL_EDITOR && $isAuthenticated): ?>
+      <div>
+      <form>
+        <input type="hidden" name="mode" value="<?php echo SAVE_REL_EDIT; ?>" />
+        <input type="hidden" name="note" value="<?php echo $Sid; ?>" />
+        <label for="rel_note">Note to relate to this:</label>
+        <select name="new_rel_note">
+          <?php $res = $db->query('SELECT name, id
+                             FROM notes
+                             WHERE id <> "' . $Sid . '"
+                             ORDER BY name') or handleIt($db->error); ?>
+          <option></option>
+          <?php while ($row = $res->fetch_assoc()) : ?>
+            <option value="<?php echo $row['id']; ?>">
+              <?php echo htmlspecialchars($row['name']); ?>
+            </option>
+          <?php endwhile; ?>
+        </select>
+        <br />
+        <label name="new_rel_type">Type of relation:</label>
+        <select name="new_rel_type">
+          <?php $res = $db->query('SELECT name, id
+                             FROM rel_types
+                             ORDER BY name') or handleIt($db->error); ?>
+          <option></option>
+          <?php while ($row = $res->fetch_assoc()) : ?>
+            <option value="<?php echo $row['id']; ?>">
+              <?php echo htmlspecialchars($row['name']); ?>
+            </option>
+          <?php endwhile; ?>
+        </select>
+        <br />
+        <input type="checkbox" name="is_this_note_parent" value="true" />
+        <label for="is_edited_note_parent">
+          The parent of this relationship is
+          <?php echo htmlspecialchars($Xname); ?>.
+        </label>
+        <br />
+        <input type="submit" />
+        <input type="reset" />
+      </form>
+      <form>
+        <input type="hidden" name="note" value="<?php echo $Sid; ?>" />
+        <input type="submit" value="Cancel" />
+      </form>
+      </div>
+    <?php endif; ?>
+
   <?php endif; ?>
   <?php
 }
@@ -375,8 +452,29 @@ function printShortNote($Sid, $Xname) {
 }
 
 /**
- * mode must be SAVE_EDITING or SAVE_NEW
- * if mode is SAVE_EDITING post must contain: 
+ * Requires $_GET with the following:
+ *     new_rel_note=(note id)
+ *     new_rel_type=(rel type id)
+ *     is_this_note_parent='true' || ''
+ * Currently does no checking to see if values are present and valid, validity
+ * is checked by relateTheseById.
+ * Returns: String problem message if somethings wrong with input data and
+ * nothing was written
+ */
+function saveGettedRelToDb() {
+  global $SnoteId;
+  if ($_GET['is_this_note_parent'] == 'true') {
+    return relateTheseById(
+        $SnoteId, $_GET['new_rel_type'], $_GET['new_rel_note']);
+  } else {
+    return relateTheseById(
+        $_GET['new_rel_note'], $_GET['new_rel_type'], $SnoteId);
+  }
+}
+
+/**
+ * mode must be SAVE_TEXT_EDIT or SAVE_NEW
+ * if mode is SAVE_TEXT_EDIT post must contain: 
  *     note=(id), name=(text), description=(text)
  * or if mode is SAVE_NEW post must contain: 
  *     name=(text), description=(text)
@@ -386,7 +484,7 @@ function printShortNote($Sid, $Xname) {
  */
 function savePostedNoteToDb($mode) {
   global $db;
-  $SnoteId = -1;
+  $SLnoteId = -1; // local version
   
   // VALIDATE THE $_POST {{{
   $postProblemMsg = null;
@@ -394,20 +492,20 @@ function savePostedNoteToDb($mode) {
          && strlen($_POST['name']) <= MAX_NAME_LENGTH
          && array_key_exists('description', $_POST)
          && strlen($_POST['description']) <= MAX_DESCRIPTION_LENGTH;
-  if ($postOk && $mode == SAVE_EDITING) {
+  if ($postOk && $mode == SAVE_TEXT_EDIT) {
     if (array_key_exists('note', $_POST)) {
-      $SnoteId = (integer)$_POST['note'];
+      $SLnoteId = (integer)$_POST['note'];
       // Check that the note to edit already exists, also confirming that the id
       // is valid.
-      $postOk = $db->query("SELECT id FROM notes WHERE id = '$SnoteId'")
+      $postOk = $db->query("SELECT id FROM notes WHERE id = '$SLnoteId'")
                   ->num_rows == 1;
     } else $postOk = false;
   }
-  // Ensure the submitted name isn't a different note already in the db.
+  // Ensure the submitted name isn't a different not+e already in the db.
   if ($postOk) {
     $selStr = ($mode == SAVE_NEW)
         ? 'SELECT id FROM notes WHERE name = ? LIMIT 1'
-        : "SELECT id FROM notes WHERE name = ? AND id <> '$SnoteId' LIMIT 1";
+        : "SELECT id FROM notes WHERE name = ? AND id <> '$SLnoteId' LIMIT 1";
     $stmt = $db->prepare($selStr);
     $stmt->bind_param('s', $_POST['name']);
     $stmt->execute() or handleIt($stmt->error);
@@ -422,11 +520,11 @@ function savePostedNoteToDb($mode) {
   // send the new/edit to the db
   if ($postOk) {
     $stmt;
-    if ($mode == SAVE_EDITING) {
+    if ($mode == SAVE_TEXT_EDIT) {
       $stmt = $db->prepare('UPDATE notes '
                          . 'SET name = ?, description = ? '
                          . 'WHERE id = ?');
-      $stmt->bind_param('ssi', $_POST['name'], $_POST['description'], $SnoteId);
+      $stmt->bind_param('ssi', $_POST['name'], $_POST['description'], $SLnoteId);
     } else {
       $stmt = $db->prepare('INSERT INTO notes (name, description) '
                          . 'VALUES (?, ?)');
