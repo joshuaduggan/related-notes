@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Host: 127.0.0.1
--- Generation Time: Jun 02, 2016 at 01:40 AM
+-- Generation Time: Oct 14, 2016 at 03:48 AM
 -- Server version: 10.1.10-MariaDB
 -- PHP Version: 5.6.19
 
@@ -147,7 +147,8 @@ INSERT INTO `rel_cores` (`id`, `rel_type`) VALUES
 (251, 3),
 (252, 4),
 (253, 4),
-(254, 4);
+(254, 4),
+(255, 1);
 
 -- --------------------------------------------------------
 
@@ -264,7 +265,9 @@ INSERT INTO `rel_legs` (`id`, `rel_core`, `note`, `role`) VALUES
 (257, 251, 60, 'parent'),
 (258, 251, 29, 'child'),
 (259, 254, 37, 'parent'),
-(260, 254, 49, 'child');
+(260, 254, 49, 'child'),
+(261, 255, 18, ''),
+(262, 255, 42, '');
 
 -- --------------------------------------------------------
 
@@ -306,7 +309,7 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `user_email`, `user_pass_hash`, `available_time`) VALUES
-(2, 'jdoe@mail.com', '$2y$10$zx0dm/3vWvs5ArpPGobwBufe/SgX7InEvPLtX3RE7pRmiqFeBCzGO', 1460656681);
+(2, 'jdoe@mail.com', '$2y$10$zx0dm/3vWvs5ArpPGobwBufe/SgX7InEvPLtX3RE7pRmiqFeBCzGO', 1476389559);
 
 --
 -- Indexes for dumped tables
@@ -356,12 +359,12 @@ ALTER TABLE `notes`
 -- AUTO_INCREMENT for table `rel_cores`
 --
 ALTER TABLE `rel_cores`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=255;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=256;
 --
 -- AUTO_INCREMENT for table `rel_legs`
 --
 ALTER TABLE `rel_legs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=261;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=263;
 --
 -- AUTO_INCREMENT for table `rel_types`
 --

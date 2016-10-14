@@ -35,16 +35,32 @@ require_once 'common.php';
  *     mode='delete_note'
  *     note=(note id)
  *     note_to_delete=(note id)
+ * DELETE_REL: (then REL_EDITOR)
+ *   GET
+ *     mode='delete_rel'
+ *     note=(note id)
+ *     rel_core_id=(rel core id)
  * SAVE_REL_EDIT: (then REL_EDITOR)
  *   GET
  *     mode='save_rel_edit'
+ *     note=(note id)
  *     new_rel_note=(note id)
  *     new_rel_type=(rel type id)
- *     is_this_note_parent='true' || ''
+ *    [is_this_note_parent='true']
  * SAVE_TEXT_EDIT: (then SHOW_NOTE)
  *   POST
  *     mode='save_text_edit'
  *     note=(note id)
+ *     nameText=(new text)
+ *     descriptionText=(new text)
+ * CLONE_EDITOR:
+ *   GET
+ *     mode='clone_editor'
+ *     note=(note id) // the id of the note to be cloned
+ * SAVE_CLONE_EDIT: (then SHOW_NOTE)
+ *   POST
+ *     mode='save_clone_edit'
+ *     cloned_note=(note id)
  *     nameText=(new text)
  *     descriptionText=(new text)
  * SAVE_NEW: (then SHOW_NOTE)
@@ -55,11 +71,14 @@ require_once 'common.php';
  */
 const SHOW_NOTE = 'show_note';
 const TEXT_EDITOR = 'text_editor';
+const SAVE_TEXT_EDIT = 'save_text_edit';
+const CLONE_EDITOR = 'clone_editor';
+const SAVE_CLONE_EDIT = 'save_clone_edit';
 const REL_EDITOR = 'rel_editor';
+const SAVE_REL_EDIT = 'save_rel_edit';
+const DELETE_REL = 'delete_rel';
 const LOGOUT = 'logout';
 const DELETE_NOTE = 'delete_note';
-const SAVE_REL_EDIT = 'save_rel_edit';
-const SAVE_TEXT_EDIT = 'save_text_edit';
 const SAVE_NEW = 'save_new';
 // SET ONLY ONCE in the following ifelif/switch statement
 $mode = -1;
@@ -72,11 +91,14 @@ $errorMsg = null;
 if (array_key_exists('mode', $_REQUEST)) {
   switch ($_REQUEST['mode']) {
     case TEXT_EDITOR:
+    case SAVE_TEXT_EDIT:
+    case CLONE_EDITOR:
+    case SAVE_CLONE_EDIT:
     case REL_EDITOR:
+    case SAVE_REL_EDIT:
+    case DELETE_REL:
     case LOGOUT:
     case DELETE_NOTE:
-    case SAVE_REL_EDIT:
-    case SAVE_TEXT_EDIT:
     case SAVE_NEW:
       $mode = $_REQUEST['mode'];
       break;
@@ -96,19 +118,27 @@ switch ($mode) {
     $nextMode = SHOW_NOTE;
     break;
   case DELETE_NOTE:
-    // !!! incomplete !!!
+    ////////////////////////////// !!! incomplete !!! //////////////////////////
     $nextMode = SHOW_NOTE;
     break;
   case SAVE_REL_EDIT:
+  case DELETE_REL:
     if (authenticateSessionUser()) {
-      $errorMsg = saveGettedRelToDb();
-    } else $errorMsg = ' You are not logged in, relation not saved! ';
+      $errorMsg = ($mode == SAVE_REL_EDIT) ?
+          saveGettedRelToDb() :
+          deleteRelFromDb();
+    } else $errorMsg = ' You are not logged in, change not saved! ';
     $nextMode = ($errorMsg) ? SHOW_NOTE : REL_EDITOR;
     break;
+  case SAVE_CLONE_EDIT:
   case SAVE_TEXT_EDIT:
   case SAVE_NEW:
     if (authenticateSessionUser()) {
       $errorMsg = savePostedNoteToDb($mode);
+      if (!$errorMsg && $mode == SAVE_CLONE_EDIT) {
+        // clone the relations
+        ////////////////////////////////////////////////////////////////////////
+      }
       $nextMode = ($errorMsg) ? TEXT_EDITOR : SHOW_NOTE;
     } else {
       $errorMsg = ' You are not logged in, edit not saved! ';
@@ -124,9 +154,11 @@ $_SESSION['SlatestNoteView'] = $_SERVER['SCRIPT_NAME'] . '?note=' . $SnoteId;
 $nextUri = null;
 if ($nextMode == SHOW_NOTE ||
     $nextMode == TEXT_EDITOR ||
+    $nextMode == CLONE_EDITOR ||
     $nextMode == REL_EDITOR) {
   $nextUri = $_SESSION['SlatestNoteView'];
   if ($nextMode == TEXT_EDITOR) $nextUri .= '&mode=' . TEXT_EDITOR;
+  if ($nextMode == CLONE_EDITOR) $nextUri .= '&mode=' . CLONE_EDITOR;
   if ($nextMode == REL_EDITOR) $nextUri .= '&mode=' . REL_EDITOR;
   if (!$errorMsg) redirectAndExit($nextUri);
   // else see body below...
@@ -183,7 +215,8 @@ function showParentAndSiblings($SnoteId) {
   
   // Get the parent nodes of this along with each relation type
   $res = $db->query(
-     'SELECT notes.id AS noteId, notes.name AS noteName, rel_types.id AS relType
+     'SELECT notes.id AS noteId, notes.name AS noteName,
+            rel_types.id AS relType, rel_cores.id AS relCoreId
         FROM rel_legs
         JOIN rel_cores ON rel_legs.rel_core = rel_cores.id
         JOIN rel_types ON rel_cores.rel_type = rel_types.id
@@ -226,7 +259,8 @@ function showParentAndSiblings($SnoteId) {
                 AND rel_legs.note <> "' . $SnoteId . '"')
                   or handleIt($db->error); ?>
       <div class='type-parent'>
-        <?php printShortNote($parRelAssoc['noteId'], $parRelAssoc['noteName']); ?>
+        <?php printShortNote($parRelAssoc['noteId'], $parRelAssoc['noteName'],
+                $parRelAssoc['relCoreId']); ?>
       </div>
       
       <?php if ($subRes->num_rows < 1) continue; ?>
@@ -250,7 +284,8 @@ function showAssociates($SnoteId) {
   // Get the associate nodes (any one-one relation) of this along with each
   // relation type
   $res = $db->query(
-     'SELECT notes.id AS noteId, notes.name AS noteName, rel_types.id AS relType
+     'SELECT notes.id AS noteId, notes.name AS noteName,
+            rel_types.id AS relType, rel_cores.id AS relCoreId
         FROM rel_legs
         JOIN rel_cores ON rel_legs.rel_core = rel_cores.id
         JOIN rel_types ON rel_cores.rel_type = rel_types.id
@@ -270,7 +305,7 @@ function showAssociates($SnoteId) {
   <div class='associate-notes'>
   <?php while ($associateAssoc = $res->fetch_assoc()) : ?>
     <?php printShortNote($associateAssoc['noteId'],
-        $associateAssoc['noteName']); ?>
+        $associateAssoc['noteName'], $associateAssoc['relCoreId']); ?>
   <?php endwhile; ?>
   </div>
   
@@ -283,22 +318,27 @@ function showAssociates($SnoteId) {
  */
 function showNote($SnoteId) {
   global $db;
-  $res = $db->query(
-     'SELECT name, description
-        FROM notes
-        WHERE id = "' . $SnoteId . '"') or handleIt($db->error);
-  $mainAssoc = $res->fetch_assoc();
+  global $mode;
   ?>
-  
   <div class='main-note'>
-  <?php printFullNote($SnoteId, $mainAssoc['name'], true,
-      $mainAssoc['description']); ?>
-  
   <?php
+  if ($mode == CLONE_EDITOR) {
+    printFullNote($SnoteId, '', true, '');
+  } else {
+    $mainAssoc = $db->query(
+       'SELECT name, description
+          FROM notes
+          WHERE id = "' . $SnoteId . '"')->fetch_assoc()
+              or handleIt($db->error);
+    printFullNote($SnoteId, $mainAssoc['name'], true,
+        $mainAssoc['description']);
+  }
+  
   // get any child relations that this has as well as the name of their nodes
   $res = $db->query(
      'SELECT notes.id AS noteId, notes.name AS noteName,
-             notes.description AS noteDesc, rel_types.name AS relTypeName
+             notes.description AS noteDesc, rel_types.name AS relTypeName,
+             rel_cores.id AS relCoreId
         FROM rel_legs
         JOIN rel_cores ON rel_legs.rel_core = rel_cores.id
         JOIN rel_types ON rel_cores.rel_type = rel_types.id
@@ -328,7 +368,7 @@ function showNote($SnoteId) {
       <?php
     }
     printFullNote($childAssoc['noteId'], $childAssoc['noteName'], false,
-        $childAssoc['noteDesc']);
+        $childAssoc['noteDesc'], $childAssoc['relCoreId']);
   }
   // If any children where echoed we have to end the last relation name div
   ?>
@@ -339,20 +379,24 @@ function showNote($SnoteId) {
   <?php
 }
 
-function printFullNote($Sid, $Xname, $isMain, $Xdescription = null) {
+function printFullNote($Sid, $Xname, $isMain, $Xdescription = null,
+            $SrelCoreId = null) {
   global $mode;
   global $db;
   $isAuthenticated = authenticateSessionUser();
   ?>
-  <?php if ($isMain && $mode == TEXT_EDITOR && $isAuthenticated): ?>
+  <?php if ($isMain && $isAuthenticated &&
+            ($mode == TEXT_EDITOR || $mode == CLONE_EDITOR)): ?>
+    <?php $isC = $mode == CLONE_EDITOR; ?>
     <form method='post' action='<?php
           // this is required because with the change to post old get params
           // arn't stripped if the action is left empty or referring to self.
           echo $_SERVER['SCRIPT_NAME']; ?>'>
-      <input type="hidden" name="mode" value="<?php echo SAVE_TEXT_EDIT; ?>" />
+      <input type="hidden" name="mode" value="<?php
+          echo $isC ? SAVE_CLONE_EDIT : SAVE_TEXT_EDIT; ?>" />
       <input type="hidden" name="note" value="<?php echo $Sid; ?>" />
       <input type="text" name="name" size="80" value="<?php
-          echo htmlspecialchars($Xname); ?>" />
+          echo ($Xname) ? htmlspecialchars($Xname) : ''; ?>" />
       <textarea name="description" cols="80" rows="12"><?php
           echo ($Xdescription) ? htmlspecialchars($Xdescription) : '';
           ?></textarea>
@@ -364,26 +408,34 @@ function printFullNote($Sid, $Xname, $isMain, $Xdescription = null) {
       <input type="hidden" name="note" value="<?php echo $Sid; ?>" />
       <input type="submit" value="Cancel" />
     </form>
-    <form onsubmit="return confirm('Really delete this note?');">
-      <input type="hidden" name="mode" value="<?php echo DELETE_NOTE; ?>" />
-      <input type="hidden" name="note" value="<?php //?????????????????// ?>" />
-      <input type="hidden" name="note_to_delete" value="<?php echo $Sid; ?>" />
-      <input type="submit" value="Delete" />
-    </form>
+    <?php if (!$isC): ?>
+      <form onsubmit="return confirm('Really delete this note?');">
+        <input type="hidden" name="mode" value="<?php echo DELETE_NOTE; ?>" />
+        <input type="hidden" name="note" value="<?php //?????????????????// ?>" />
+        <input type="hidden" name="note_to_delete" value="<?php echo $Sid; ?>" />
+        <input type="submit" value="Delete" />
+      </form>
+    <?php endif; ?>
 
   <?php else: ?>
     <h3>
       <a href="<?php echo $_SERVER['SCRIPT_NAME'] . '?note=' . $Sid; ?>">
         <?php echo htmlspecialchars($Xname); ?>
       </a>
+      <?php if ($isAuthenticated && !$isMain && $mode == REL_EDITOR) : ?>
+        <?php printRelDeleteForm($SrelCoreId); ?>
+      <?php endif; ?>
     </h3>
-    <?php if ($isMain && $mode != REL_EDITOR && $isAuthenticated): ?>
+    <?php if ($isAuthenticated && $isMain && $mode != REL_EDITOR): ?>
       <a class='rn-mod-butt rn-link-butt'href='<?php echo
           $_SERVER['SCRIPT_NAME'] . '?note=' . $Sid . '&mode=' . TEXT_EDITOR;
           ?>'>Edit</a>
       <a class='rn-mod-butt rn-link-butt'href='<?php echo
           $_SERVER['SCRIPT_NAME'] . '?note=' . $Sid . '&mode=' . REL_EDITOR;
           ?>'>Relate</a>
+      <a class='rn-mod-butt rn-link-butt'href='<?php echo
+          $_SERVER['SCRIPT_NAME'] . '?note=' . $Sid . '&mode=' . CLONE_EDITOR;
+          ?>'>Clone</a>
     <?php endif; ?>
     <?php if ($Xdescription): ?>
       <p><?php echo htmlspecialchars($Xdescription); ?></p>
@@ -436,18 +488,35 @@ function printFullNote($Sid, $Xname, $isMain, $Xdescription = null) {
       </form>
       </div>
     <?php endif; ?>
-
   <?php endif; ?>
   <?php
 }
 
-function printShortNote($Sid, $Xname) {
+function printShortNote($Sid, $Xname, $SrelCoreId = null) {
+  global $mode;
+  $isAuthenticated = authenticateSessionUser();
   ?>
   <div>
     <a href="<?php echo $_SERVER['SCRIPT_NAME'] . '?note=' . $Sid; ?>">
       <?php echo htmlspecialchars($Xname); ?>
     </a>
+    <?php if ($isAuthenticated && $mode == REL_EDITOR && $SrelCoreId) : ?>
+      <?php printRelDeleteForm($SrelCoreId); ?>
+    <?php endif; ?>
   </div>
+  <?php
+}
+
+function printRelDeleteForm($SrelCoreId) {
+  global $SnoteId;
+  ?>
+  <form>
+    <input type="hidden" name="mode" value="<?php echo DELETE_REL; ?>" />
+    <input type="hidden" name="note" value="<?php echo $SnoteId; ?>" />
+    <input type="hidden" name="rel_core_id" value="<?php
+        echo $SrelCoreId; ?>" />
+    <input type="submit" value="X" />
+  </form>
   <?php
 }
 
@@ -456,13 +525,15 @@ function printShortNote($Sid, $Xname) {
  *     new_rel_note=(note id)
  *     new_rel_type=(rel type id)
  *     is_this_note_parent='true' || ''
- * Currently does no checking to see if values are present and valid, validity
- * is checked by relateTheseById.
  * Returns: String problem message if somethings wrong with input data and
  * nothing was written
  */
 function saveGettedRelToDb() {
   global $SnoteId;
+  if (!array_key_exists('new_rel_type', $_GET) ||
+      !array_key_exists('new_rel_note', $_GET)) {
+    return ' Bad form data. ';
+  }
   if ($_GET['is_this_note_parent'] == 'true') {
     return relateTheseById(
         $SnoteId, $_GET['new_rel_type'], $_GET['new_rel_note']);
@@ -470,6 +541,17 @@ function saveGettedRelToDb() {
     return relateTheseById(
         $_GET['new_rel_note'], $_GET['new_rel_type'], $SnoteId);
   }
+}
+
+/**
+ * Requires $_GET with the following:
+ *     rel_core_id=(rel core id)
+ * Returns: String problem message if somethings wrong with input data and
+ * nothing was written
+ */
+function deleteRelFromDb() {
+  if (!array_key_exists('rel_core_id', $_GET)) return ' Bad form data. ';
+  return deleteRelation($_GET['rel_core_id']);
 }
 
 /**
@@ -501,7 +583,7 @@ function savePostedNoteToDb($mode) {
                   ->num_rows == 1;
     } else $postOk = false;
   }
-  // Ensure the submitted name isn't a different not+e already in the db.
+  // Ensure the submitted name isn't a different note already in the db.
   if ($postOk) {
     $selStr = ($mode == SAVE_NEW)
         ? 'SELECT id FROM notes WHERE name = ? LIMIT 1'
