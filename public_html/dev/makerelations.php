@@ -70,25 +70,8 @@ function relateTheseByName($XnoteAName, $XrelationTypeName, $XnoteBName) {
   if ($res->num_rows > 0) {
     return 'This relation already exists, and was not re-created.';
   }
-
-  // Create the relation
-  $db->query(
-      'INSERT INTO rel_cores (rel_type) 
-         VALUES (' . $relationTypeId . ')'
-    ) or handleIt($db->error);
-  $db->query(
-     'INSERT INTO rel_legs (rel_core, note, role)
-        VALUES
-          (' .
-             $db->insert_id . ', ' .
-             $noteIds[0] . ', ' .
-             (($relationTypeStructure == 'one-many') ? '"parent"' : 'NULL') .
-          '), (' .
-             $db->insert_id . ', ' .
-             $noteIds[1] . ', ' .
-             (($relationTypeStructure == 'one-many') ? '"child"' : 'NULL') .
-          ')'
-    ) or handleIt($db->error);
+  
+  relateTheseById($noteIds[0], $relationTypeId, $noteIds[1]);
 }
 ?><!doctype html>
 <html>

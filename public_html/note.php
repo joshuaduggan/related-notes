@@ -107,9 +107,13 @@ if (array_key_exists('mode', $_REQUEST)) {
   }
 } else $mode = SHOW_NOTE;
 
+// Sanitize the passed note id, then set it to the default if none was passed or
+// it's invalid.
 $SnoteId = (array_key_exists('note', $_REQUEST))
              ? (integer)$_REQUEST['note']
              : getDefaultNoteId();
+$res = $db->query('SELECT id FROM notes WHERE id = "' . $SnoteId . '" LIMIT 1');
+if ($res->num_rows < 1) $SnoteId = getDefaultNoteId();
 
 // Put mode specific init/pre display code here.
 switch ($mode) {
@@ -134,10 +138,11 @@ switch ($mode) {
   case SAVE_TEXT_EDIT:
   case SAVE_NEW:
     if (authenticateSessionUser()) {
+      $SoldNoteId = $SnoteId;
       $errorMsg = savePostedNoteToDb($mode);
       if (!$errorMsg && $mode == SAVE_CLONE_EDIT) {
         // clone the relations
-        ////////////////////////////////////////////////////////////////////////
+        cloneRels($SoldNoteId);
       }
       $nextMode = ($errorMsg) ? TEXT_EDITOR : SHOW_NOTE;
     } else {
@@ -411,8 +416,7 @@ function printFullNote($Sid, $Xname, $isMain, $Xdescription = null,
     <?php if (!$isC): ?>
       <form onsubmit="return confirm('Really delete this note?');">
         <input type="hidden" name="mode" value="<?php echo DELETE_NOTE; ?>" />
-        <input type="hidden" name="note" value="<?php //?????????????????// ?>" />
-        <input type="hidden" name="note_to_delete" value="<?php echo $Sid; ?>" />
+        <input type="hidden" name="note" value="<?php echo $Sid; ?>" />
         <input type="submit" value="Delete" />
       </form>
     <?php endif; ?>
@@ -492,6 +496,42 @@ function printFullNote($Sid, $Xname, $isMain, $Xdescription = null,
   <?php
 }
 
+/**
+ * !!! A very inefficient implementation, this can probably be done with a few
+ *     complex SQL calls. Instead of retreving all the relations then looping
+ *     through them to create them one at a time. !!!
+ */
+function cloneRels($SoldNoteId) {
+  global $db;
+  global $SnoteId; // the new note id
+  
+  // get a list of the rels that the old note has
+  $res = $db->query(
+     'SELECT notes.id AS noteId, rel_types.id AS relTypeId,
+             rel_legs.role AS relRole
+        FROM rel_legs
+        JOIN rel_cores ON rel_legs.rel_core = rel_cores.id
+        JOIN rel_types ON rel_cores.rel_type = rel_types.id
+        JOIN notes ON rel_legs.note = notes.id
+        WHERE rel_cores.id IN
+          (SELECT rel_cores.id
+            FROM rel_legs
+            JOIN rel_cores ON rel_legs.rel_core = rel_cores.id
+            JOIN rel_types ON rel_cores.rel_type = rel_types.id
+            WHERE rel_legs.note = "' . $SoldNoteId . '"
+            ORDER BY rel_types.id)
+          AND rel_legs.note <> "' . $SoldNoteId . '"') or handleIt($db->error);
+
+  // create new relations for the new note
+  while ($assoc = $res->fetch_assoc()) {
+    if ($assoc['relRole'] == 'child') {
+      relateTheseById($SnoteId, $assoc['relTypeId'], $assoc['noteId']);
+    } else {
+      relateTheseById($assoc['noteId'], $assoc['relTypeId'], $SnoteId);
+    }
+  }
+}
+
 function printShortNote($Sid, $Xname, $SrelCoreId = null) {
   global $mode;
   $isAuthenticated = authenticateSessionUser();
@@ -555,18 +595,24 @@ function deleteRelFromDb() {
 }
 
 /**
- * mode must be SAVE_TEXT_EDIT or SAVE_NEW
+ * mode must be SAVE_TEXT_EDIT, SAVE_CLONE_EDIT or SAVE_NEW
  * if mode is SAVE_TEXT_EDIT post must contain: 
  *     note=(id), name=(text), description=(text)
- * or if mode is SAVE_NEW post must contain: 
+ * or if mode is SAVE_CLONE_EDIT or SAVE_NEW post must contain: 
  *     name=(text), description=(text)
+ *     changes the global SnoteId to the new value!!
  *
  * Returns: String problem message if somethings wrong with input data and
  * nothing was written
  */
 function savePostedNoteToDb($mode) {
   global $db;
+  global $SnoteId;
   $SLnoteId = -1; // local version
+  
+///////////////////// !!!! now that cloning is begning, not to mention later new
+///////////////////// note functionality, this has to get the new id and update
+///////////////////// the environment with it. !!!
   
   // VALIDATE THE $_POST {{{
   $postProblemMsg = null;
@@ -607,12 +653,14 @@ function savePostedNoteToDb($mode) {
                          . 'SET name = ?, description = ? '
                          . 'WHERE id = ?');
       $stmt->bind_param('ssi', $_POST['name'], $_POST['description'], $SLnoteId);
+      $stmt->execute() or handleIt($stmt->error);
     } else {
       $stmt = $db->prepare('INSERT INTO notes (name, description) '
                          . 'VALUES (?, ?)');
       $stmt->bind_param('ss', $_POST['name'], $_POST['description']);
+      $stmt->execute() or handleIt($stmt->error);
+      $SnoteId = $db->insert_id;
     }
-    $stmt->execute() or handleIt($stmt->error);
   
   // There was an issue with the posted data.
   } else {
@@ -625,6 +673,7 @@ function savePostedNoteToDb($mode) {
  * Currently no default note functionality is available, the test db
  * implementation has the concept of a "home" parent note but at the moment
  * that's not a type understood by RN.
+ * !!! MUST BE IMPLEMENTED CORRECTLY !!!
  * returns: the id of the latest note added to the DB.
  */
 function getDefaultNoteId() {

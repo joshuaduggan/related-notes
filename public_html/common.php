@@ -130,28 +130,6 @@ function deleteNote($id) {
 }
 
 /**
- * Build an array of this note's relations.
- */
-function getRelatedNotes($XnoteId) {
-  global $db;
-  $relatedNoteIds = [];
-  // gets all the cores that are linked from the note, then gets all the notes
-  // that are linked from those cores, then discards all notes which are the
-  // original id (which would be half since each relation links 2 notes)
-  $res = $db->query(
-      'SELECT note ' .
-        'FROM rel_legs' .
-        'WHERE rel_core IN' .
-          '(SELECT rel_core' .
-            'FROM rel_legs' .
-            'WHERE note = ' . ((integer)$XnoteId) . ') ' .
-        'AND note <> ' . ((integer)$XnoteId))
-    or handleIt($db->error);
-  while ($curRow = $res->fetch_row()) $relatedNoteIds[] = $curRow[0];
-  return $relatedNoteIds;
-}
-
-/**
  * RETURNS Nothing unless an error occured in which case a somewhat descriptive
  * message string
  */
@@ -165,15 +143,22 @@ function deleteRelation($XrelCoreId) {
 }
 
 /**
- * If the relation type is of a one-many structure noteA is the root.
+ * If the relation type is of a one-many structure noteA is the root. Checks to
+ * ensure the relation doesn't already exist. Does not allow a relation to
+ * relate to itself.
  * RETURNS Nothing unless an error occured in which case a somewhat descriptive
- * message string
+ *    message string.
  */
 function relateTheseById($XnoteAId, $XrelTypeId, $XnoteBId) {
   global $db;
   $SnoteAId = (int)$XnoteAId;
   $SrelTypeId = (int)$XrelTypeId;
   $SnoteBId = (int)$XnoteBId;
+  
+  // Notes may not be directly related to themselves.
+  if ($SnoteAId == $SnoteBId) {
+    return ' Notes may not be directly related to themselves. ';
+  }
   
   // Check that all passed ids are valid.
   $res = $db->query('SELECT id
