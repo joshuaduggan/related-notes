@@ -1,3 +1,42 @@
+    (
+CREATE TEMPORARY TABLE cores_to_delete AS
+  SELECT rel_cores.id AS id
+    FROM rel_legs
+    JOIN rel_cores ON rel_legs.rel_core = rel_cores.id
+    JOIN rel_types ON rel_cores.rel_type = rel_types.id
+    WHERE rel_legs.note = 61;
+SELECT * FROM cores_to_delete;
+
+DELETE rel_legs, rel_cores FROM rel_legs
+  JOIN rel_cores ON rel_legs.rel_core = rel_cores.id
+  JOIN notes ON rel_legs.note = notes.id
+  WHERE rel_cores.id IN cores_to_delete.id
+
+DELETE rel_legs, rel_cores FROM rel_legs
+  JOIN rel_cores ON rel_legs.rel_core = rel_cores.id
+  JOIN rel_types ON rel_cores.rel_type = rel_types.id
+  JOIN notes ON rel_legs.note = notes.id
+  WHERE rel_cores.id IN
+    (SELECT rel_cores.id
+      FROM rel_legs
+      JOIN rel_cores ON rel_legs.rel_core = rel_cores.id
+      JOIN rel_types ON rel_cores.rel_type = rel_types.id
+      WHERE rel_legs.note = ?)
+
+SELECT notes.name, notes.id AS note, rel_types.name, rel_cores.id AS core,
+    rel_legs.id AS leg
+  FROM rel_legs
+  JOIN rel_cores ON rel_legs.rel_core = rel_cores.id
+  JOIN rel_types ON rel_cores.rel_type = rel_types.id
+  JOIN notes ON rel_legs.note = notes.id
+  WHERE rel_cores.id IN
+    (SELECT rel_cores.id
+      FROM rel_legs
+      JOIN rel_cores ON rel_legs.rel_core = rel_cores.id
+      JOIN rel_types ON rel_cores.rel_type = rel_types.id
+      WHERE rel_legs.note = 42
+      ORDER BY rel_types.id)
+
 SELECT rel_legs.note AS noteId
   FROM rel_legs
   JOIN rel_cores ON rel_legs.rel_core = rel_cores.id

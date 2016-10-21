@@ -122,15 +122,17 @@ switch ($mode) {
     $nextMode = SHOW_NOTE;
     break;
   case DELETE_NOTE:
-    ////////////////////////////// !!! incomplete !!! //////////////////////////
+    if (authenticateSessionUser()) {
+      deleteNote($SnoteId);
+      $SnoteId = getDefaultNoteId();
+    } else $errorMsg = ' You are not logged in, note not deleted! ';
     $nextMode = SHOW_NOTE;
     break;
   case SAVE_REL_EDIT:
   case DELETE_REL:
     if (authenticateSessionUser()) {
       $errorMsg = ($mode == SAVE_REL_EDIT) ?
-          saveGettedRelToDb() :
-          deleteRelFromDb();
+          saveGettedRelToDb() : deleteRelFromDb();
     } else $errorMsg = ' You are not logged in, change not saved! ';
     $nextMode = ($errorMsg) ? SHOW_NOTE : REL_EDITOR;
     break;
@@ -140,10 +142,7 @@ switch ($mode) {
     if (authenticateSessionUser()) {
       $SoldNoteId = $SnoteId;
       $errorMsg = savePostedNoteToDb($mode);
-      if (!$errorMsg && $mode == SAVE_CLONE_EDIT) {
-        // clone the relations
-        cloneRels($SoldNoteId);
-      }
+      if (!$errorMsg && $mode == SAVE_CLONE_EDIT) cloneRels($SoldNoteId);
       $nextMode = ($errorMsg) ? TEXT_EDITOR : SHOW_NOTE;
     } else {
       $errorMsg = ' You are not logged in, edit not saved! ';
@@ -610,13 +609,10 @@ function savePostedNoteToDb($mode) {
   global $SnoteId;
   $SLnoteId = -1; // local version
   
-///////////////////// !!!! now that cloning is begning, not to mention later new
-///////////////////// note functionality, this has to get the new id and update
-///////////////////// the environment with it. !!!
-  
   // VALIDATE THE $_POST {{{
   $postProblemMsg = null;
   $postOk = array_key_exists('name', $_POST)
+         && strlen($_POST['name']) > 0
          && strlen($_POST['name']) <= MAX_NAME_LENGTH
          && array_key_exists('description', $_POST)
          && strlen($_POST['description']) <= MAX_DESCRIPTION_LENGTH;
@@ -640,7 +636,7 @@ function savePostedNoteToDb($mode) {
     $stmt->store_result();
     $postOk = $stmt->num_rows == 0;
     if (!$postOk) {
-      $postProblemMsg .= ' The name submitted is already used by another note. ';
+      $postProblemMsg .= ' The name submitted is already in use. ';
     }
   }
   // }}} DONE VALIDATING THE $_POST.
@@ -652,7 +648,8 @@ function savePostedNoteToDb($mode) {
       $stmt = $db->prepare('UPDATE notes '
                          . 'SET name = ?, description = ? '
                          . 'WHERE id = ?');
-      $stmt->bind_param('ssi', $_POST['name'], $_POST['description'], $SLnoteId);
+      $stmt->bind_param('ssi', $_POST['name'], $_POST['description'],
+          $SLnoteId);
       $stmt->execute() or handleIt($stmt->error);
     } else {
       $stmt = $db->prepare('INSERT INTO notes (name, description) '
@@ -664,7 +661,8 @@ function savePostedNoteToDb($mode) {
   
   // There was an issue with the posted data.
   } else {
-    $postProblemMsg .= ' There was a problem processing the submitted data. Please check it\'s validity and try again. ';
+    $postProblemMsg .= ' There was a problem processing the submitted data.
+        Please check it\'s validity and try again. ';
     return $postProblemMsg;
   }
 }

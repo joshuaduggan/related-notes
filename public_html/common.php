@@ -113,20 +113,32 @@ function getSessionUserPassHash() {
   return ($res->num_rows != 1) ? null : $res->fetch_assoc()['user_pass_hash'];
 }
 
+/**
+ * Delete the relevant records from relations tables and notes table all in
+ * one go. NOTE: This will delete an entire relation if any associated note is
+ * deleted meaning that future 3+ leg relations would be wiped out inapproriatly
+ */
 function deleteNote($id) {
   global $db;
-  // delete the relevant records from relations tables and notes table all in
-  // one go. NOTE: This will delete an entire relation if any associated note
-  // is deleted!
+  $Sid = (int)$id;
   $db->query(
-      'DELETE rel_legs, rel_cores, notes ' .
-        'FROM rel_legs ' .
-          'JOIN rel_cores ' .
-            'ON rel_legs.rel_core = rel_cores.id ' .
-          'JOIN notes ' .
-            'ON rel_legs.note = notes.id ' .
-        'WHERE notes.id = ' . ((integer)$id))
-    or handleIt($db->error);
+     'CREATE TEMPORARY TABLE cores_to_delete
+        SELECT rel_cores.id
+          FROM rel_legs
+          JOIN rel_cores ON rel_legs.rel_core = rel_cores.id
+          WHERE rel_legs.note = "' . $Sid . '"')
+            or handleIt($db->error);
+  $db->query(
+     'DELETE rel_legs, rel_cores FROM rel_legs
+        JOIN rel_cores ON rel_legs.rel_core = rel_cores.id
+        WHERE rel_cores.id IN (SELECT * FROM cores_to_delete)')
+            or handleIt($db->error);
+  $db->query(
+     'DELETE FROM notes WHERE notes.id = "' . $Sid . '"')
+            or handleIt($db->error);
+  $db->query(
+     'DROP TABLE cores_to_delete')
+            or handleIt($db->error);
 }
 
 /**
