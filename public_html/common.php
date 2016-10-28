@@ -1,7 +1,7 @@
 <?php
 define('LOCAL', true);
-define('VERSION', '0.2.1' . (LOCAL ? '-loc' : '-net'));
-define('DB_NAME', 'related_notes_0_2');
+define('VERSION', '0.3' . (LOCAL ? '-loc' : '-net'));
+define('DB_NAME', 'webdevtech-rn0-3');
 define('DB_HOST', (LOCAL ? 'localhost' : 'mysql.joshuaduggan.com'));
 
 # Requires a php ini file like this:
@@ -188,8 +188,8 @@ function relateTheseById($XnoteAId, $XrelTypeId, $XnoteBId) {
 
   // Check that this relation doesn't already exist. This is done by joining the
   // relation tables together, selecting the rel_core ids and a count of
-  // identical ones, where they involve the rel_type and notes that we care
-  // about and returning a row where the grouped count of identical
+  // identical ones, where they involve the rel_type and notes and roles that
+  // we care about and returning a row where the grouped count of identical
   // rel_legs.rel_core ids are greater than 1 - which can only be the case if 2
   // legs link to the same core, which means the relationship between these
   // notes of this type already exists. (ps; or it could be a relation links to
@@ -198,13 +198,11 @@ function relateTheseById($XnoteAId, $XrelTypeId, $XnoteBId) {
   $res = $db->query(
      'SELECT rel_legs.rel_core, count(*)
         FROM rel_legs
-          JOIN rel_cores
-            ON rel_legs.rel_core = rel_cores.id
-          JOIN rel_types
-            ON rel_cores.rel_type = rel_types.id
+          JOIN rel_cores ON rel_legs.rel_core = rel_cores.id
+          JOIN rel_types ON rel_cores.rel_type = rel_types.id
         WHERE rel_types.id = ' . $SrelTypeId . '
-        AND (rel_legs.note = ' . $SnoteAId . '
-          OR rel_legs.note = ' . $SnoteBId . ')
+        AND ((rel_legs.note = ' . $SnoteAId . ' AND rel_legs.role = "parent")
+          OR (rel_legs.note = ' . $SnoteBId . ' AND rel_legs.role = "child"))
         GROUP BY rel_legs.rel_core
         HAVING count(*) > 1')
       or handleIt($db->error);
@@ -256,7 +254,7 @@ function handleIt($errorMessage) {
 function getDefaultNoteId() {
   global $db;
   $res = $db->query(
-      'SELECT MAX(id) AS max_id
-       FROM notes') or handleIt($db->error);
-  return $res->fetch_assoc()['max_id'];
+      'SELECT value FROM properties WHERE name = "home_note_id"')
+          or handleIt($db->error);
+  return (int)$res->fetch_assoc()['value'];
 }

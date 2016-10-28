@@ -80,7 +80,7 @@ function showParentAndSiblings($SnoteId) {
         <div class="explainer">
           <span class="about-note"><?php echo htmlspecialchars($XnoteName); ?></span>
           -
-          <?php echo htmlspecialchars($parRelAssoc['relPurpose']); ?>
+          [<?php echo htmlspecialchars($parRelAssoc['relPurpose']); ?>]
           <?php echo htmlspecialchars($parRelAssoc['noteName']); ?>
 
           <?php if ($subRes->num_rows < 1) : ?>
@@ -88,7 +88,7 @@ function showParentAndSiblings($SnoteId) {
             <?php continue; ?>
           <?php endif; ?>
           
-          as are the following
+          [as well as the following]
         </div>
         
         <?php

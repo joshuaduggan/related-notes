@@ -183,11 +183,12 @@ $XnoteName = $db->query('SELECT name FROM notes WHERE id = ' . $SnoteId)->fetch_
 
   <div class='gd-box gd-header'>
     <h2 class='rn-title'>
-    <?php
-      $res = $db->query('SELECT value FROM properties WHERE name = "db_name"')
+    <a href='<?php echo $_SERVER['SCRIPT_NAME']; ?>'><?php
+      $res = $db->query(
+          'SELECT value FROM properties WHERE name = "installation_name"')
               or handleIt($db->error);
       echo $res->fetch_assoc()['value'];
-    ?>
+    ?></a>
     - Related Notes</h2>
     <p class='rn-user-status'>
       <?php if (authenticateSessionUser()) : ?>
@@ -325,7 +326,7 @@ function printFullNote($Sid, $Xname, $isMain, $Xdescription = null,
       <a href="<?php echo $_SERVER['SCRIPT_NAME'] . '?note=' . $Sid; ?>"><?php echo htmlspecialchars($Xname); ?></a>
       <?php if (!$isMain) : ?>
         <span class="explainer">-
-          <?php echo htmlspecialchars($XrelPurpose); ?>
+          [<?php echo htmlspecialchars($XrelPurpose); ?>]
           <?php echo htmlspecialchars($XnoteName); ?></span>
       <?php endif ?>
       <?php if ($isAuthenticated && !$isMain && $mode == REL_EDITOR) : ?>
@@ -461,7 +462,8 @@ function saveGettedRelToDb() {
       !array_key_exists('new_rel_note', $_GET)) {
     return ' Bad form data. ';
   }
-  if ($_GET['is_this_note_parent'] == 'true') {
+  if (array_key_exists('is_this_note_parent', $_GET) &&
+      $_GET['is_this_note_parent'] == 'true') {
     return relateTheseById(
         $SnoteId, $_GET['new_rel_type'], $_GET['new_rel_note']);
   } else {

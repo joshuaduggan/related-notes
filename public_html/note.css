@@ -23,9 +23,6 @@ form {
     "gd-header gd-header gd-header"
     "gd-main gd-main gd-sidebar";
 }
-.gd-box {
-  background-color: #BBB;
-}
 
 .rn-title {
   float: left;
@@ -46,9 +43,6 @@ form {
   float: right;
 }
 
-.type-parent {
-  background-color: #DDF;
-}
 .main-note {
   background-color: #F6F6F6;
 }
