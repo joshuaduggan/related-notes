@@ -126,13 +126,14 @@ function deleteNote($id) {
         SELECT rel_cores.id
           FROM rel_legs
           JOIN rel_cores ON rel_legs.rel_core = rel_cores.id
-          WHERE rel_legs.note = "' . $Sid . '"')
-            or handleIt($db->error);
+            WHERE rel_legs.note = "' . $Sid . '"')
+              or handleIt($db->error);
   $db->query(
      'DELETE rel_legs, rel_cores FROM rel_legs
         JOIN rel_cores ON rel_legs.rel_core = rel_cores.id
-        WHERE rel_cores.id IN (SELECT * FROM cores_to_delete)')
-            or handleIt($db->error);
+          WHERE rel_cores.id IN
+            (SELECT * FROM cores_to_delete)')
+              or handleIt($db->error);
   $db->query(
      'DELETE FROM notes WHERE notes.id = "' . $Sid . '"')
             or handleIt($db->error);
@@ -243,4 +244,19 @@ function handleIt($errorMessage) {
        . "try something else?\n";
     die();
   }
+}
+
+/**
+ * Currently no default note functionality is available, the test db
+ * implementation has the concept of a "home" parent note but at the moment
+ * that's not a type understood by RN.
+ * !!! MUST BE IMPLEMENTED CORRECTLY !!!
+ * returns: the id of the latest note added to the DB.
+ */
+function getDefaultNoteId() {
+  global $db;
+  $res = $db->query(
+      'SELECT MAX(id) AS max_id
+       FROM notes') or handleIt($db->error);
+  return $res->fetch_assoc()['max_id'];
 }

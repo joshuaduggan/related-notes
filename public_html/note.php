@@ -1,5 +1,6 @@
 <?php
 require_once 'common.php';
+require_once 'sidebar.php';
 
 /**
  * GENERAL:
@@ -168,6 +169,8 @@ if ($nextMode == SHOW_NOTE ||
   // else see body below...
 }
 
+$XnoteName = $db->query('SELECT name FROM notes WHERE id = ' . $SnoteId)->fetch_assoc()['name'] or handleIt($db->error);
+
 ?><!doctype html>
 <html>
 <head>
@@ -179,7 +182,13 @@ if ($nextMode == SHOW_NOTE ||
 <?php if (!$errorMsg): // no error show this page! ?>
 
   <div class='gd-box gd-header'>
-    <h2 class='rn-title'>Related Notes - (name of data/site)</h2>
+    <h2 class='rn-title'>
+    <?php
+      $res = $db->query('SELECT value FROM properties WHERE name = "db_name"')
+              or handleIt($db->error);
+      echo $res->fetch_assoc()['value'];
+    ?>
+    - Related Notes</h2>
     <p class='rn-user-status'>
       <?php if (authenticateSessionUser()) : ?>
         Logged in as <?php echo htmlspecialchars($_SESSION['userEmail']) ?>
@@ -195,11 +204,8 @@ if ($nextMode == SHOW_NOTE ||
     <?php showNote($SnoteId); ?>
   </div>
 
-  <div class="gd-box gd-sidebar">
-    <?php showParentAndSiblings($SnoteId); ?>
-    <?php showAssociates($SnoteId); ?>
-  </div>
-  
+  <?php showSidebar(); ?>
+
 <?php else: // show the error and provide continue to this again ?>
 
   <p><?php echo $errorMsg; ?></p>
@@ -209,112 +215,7 @@ if ($nextMode == SHOW_NOTE ||
 </div>
 </body>
 </html>
-
 <?php
-/**
- * Shows just names of sibling notes of this.
- */
-function showParentAndSiblings($SnoteId) {
-  global $db;
-  
-  // Get the parent nodes of this along with each relation type
-  $res = $db->query(
-     'SELECT notes.id AS noteId, notes.name AS noteName,
-            rel_types.id AS relType, rel_cores.id AS relCoreId
-        FROM rel_legs
-        JOIN rel_cores ON rel_legs.rel_core = rel_cores.id
-        JOIN rel_types ON rel_cores.rel_type = rel_types.id
-        JOIN notes ON rel_legs.note = notes.id
-        WHERE rel_cores.id IN
-          (SELECT rel_cores.id
-            FROM rel_legs
-            JOIN rel_cores ON rel_legs.rel_core = rel_cores.id
-            JOIN rel_types ON rel_cores.rel_type = rel_types.id
-            WHERE rel_legs.note = "' . $SnoteId . '"
-              AND rel_types.structure = "one-many"
-              AND rel_legs.role = "child"
-            ORDER BY rel_types.id)
-          AND rel_types.structure = "one-many"
-          AND rel_legs.role = "parent"') or handleIt($db->error);
-        
-  // For each of this' parents show all their child notes who's relation to that
-  // parent is of the same type as this'.
-  ?>
-  
-  <div class='sibling-notes'>
-    <?php while ($parRelAssoc = $res->fetch_assoc()) : ?>
-      <?php $subRes = $db->query(
-           'SELECT notes.id AS noteId, notes.name AS noteName
-              FROM rel_legs
-              JOIN rel_cores ON rel_legs.rel_core = rel_cores.id
-              JOIN rel_types ON rel_cores.rel_type = rel_types.id
-              JOIN notes ON rel_legs.note = notes.id
-              WHERE rel_cores.id IN
-                (SELECT rel_cores.id
-                  FROM rel_legs
-                  JOIN rel_cores ON rel_legs.rel_core = rel_cores.id
-                  JOIN rel_types ON rel_cores.rel_type = rel_types.id
-                  WHERE rel_legs.note = "' . $parRelAssoc['noteId'] . '"
-                    AND rel_types.id = "' . $parRelAssoc['relType'] . '"
-                    AND rel_legs.role = "parent"
-                  ORDER BY rel_types.id)
-                AND rel_types.structure = "one-many"
-                AND rel_legs.role = "child"
-                AND rel_legs.note <> "' . $SnoteId . '"')
-                  or handleIt($db->error); ?>
-      <div class='type-parent'>
-        <?php printShortNote($parRelAssoc['noteId'], $parRelAssoc['noteName'],
-                $parRelAssoc['relCoreId']); ?>
-      </div>
-      
-      <?php if ($subRes->num_rows < 1) continue; ?>
-      
-      <div class='common-parent-siblings'>
-        <?php
-        while ($siblingAssoc = $subRes->fetch_assoc()) {
-          printShortNote($siblingAssoc['noteId'], $siblingAssoc['noteName']);
-        }
-        ?>
-      </div>
-    <?php endwhile; ?>
-  </div>
-  
-  <?php
-}
-
-function showAssociates($SnoteId) {
-  global $db;
-  
-  // Get the associate nodes (any one-one relation) of this along with each
-  // relation type
-  $res = $db->query(
-     'SELECT notes.id AS noteId, notes.name AS noteName,
-            rel_types.id AS relType, rel_cores.id AS relCoreId
-        FROM rel_legs
-        JOIN rel_cores ON rel_legs.rel_core = rel_cores.id
-        JOIN rel_types ON rel_cores.rel_type = rel_types.id
-        JOIN notes ON rel_legs.note = notes.id
-        WHERE rel_cores.id IN
-          (SELECT rel_cores.id
-            FROM rel_legs
-            JOIN rel_cores ON rel_legs.rel_core = rel_cores.id
-            JOIN rel_types ON rel_cores.rel_type = rel_types.id
-            WHERE rel_legs.note = "' . $SnoteId . '"
-              AND rel_types.structure = "one-one"
-            ORDER BY rel_types.id)
-          AND notes.id <> "' . $SnoteId . '"')
-              or handleIt($db->error);
-  ?>
-  
-  <div class='associate-notes'>
-  <?php while ($associateAssoc = $res->fetch_assoc()) : ?>
-    <?php printShortNote($associateAssoc['noteId'],
-        $associateAssoc['noteName'], $associateAssoc['relCoreId']); ?>
-  <?php endwhile; ?>
-  </div>
-  
-  <?php
-}
 
 /**
  * Shows the passed note id as well as any child notes, which are grouped by
@@ -342,7 +243,7 @@ function showNote($SnoteId) {
   $res = $db->query(
      'SELECT notes.id AS noteId, notes.name AS noteName,
              notes.description AS noteDesc, rel_types.name AS relTypeName,
-             rel_cores.id AS relCoreId
+             rel_cores.id AS relCoreId, rel_types.purpose AS relPurpose
         FROM rel_legs
         JOIN rel_cores ON rel_legs.rel_core = rel_cores.id
         JOIN rel_types ON rel_cores.rel_type = rel_types.id
@@ -363,20 +264,18 @@ function showNote($SnoteId) {
   while ($childAssoc = $res->fetch_assoc()) {
     if ($childAssoc['relTypeName'] != $curRelationName) {
       ?>
-      
       <?php if ($curRelationName != null) : ?></div><?php endif; ?>
       <?php $curRelationName = $childAssoc['relTypeName']; ?>
       <div class='child-notes'>
         <h3><?php echo htmlspecialchars($curRelationName); ?></h3>
-        
       <?php
     }
     printFullNote($childAssoc['noteId'], $childAssoc['noteName'], false,
-        $childAssoc['noteDesc'], $childAssoc['relCoreId']);
+        $childAssoc['noteDesc'], $childAssoc['relCoreId'],
+        $childAssoc['relPurpose']);
   }
   // If any children where echoed we have to end the last relation name div
   ?>
-  
   <?php if ($curRelationName != null) : ?></div><?php endif; ?>
   </div>
   
@@ -384,9 +283,10 @@ function showNote($SnoteId) {
 }
 
 function printFullNote($Sid, $Xname, $isMain, $Xdescription = null,
-            $SrelCoreId = null) {
+            $SrelCoreId = null, $XrelPurpose = null) {
   global $mode;
   global $db;
+  global $XnoteName;
   $isAuthenticated = authenticateSessionUser();
   ?>
   <?php if ($isMain && $isAuthenticated &&
@@ -422,9 +322,12 @@ function printFullNote($Sid, $Xname, $isMain, $Xdescription = null,
 
   <?php else: ?>
     <h3>
-      <a href="<?php echo $_SERVER['SCRIPT_NAME'] . '?note=' . $Sid; ?>">
-        <?php echo htmlspecialchars($Xname); ?>
-      </a>
+      <a href="<?php echo $_SERVER['SCRIPT_NAME'] . '?note=' . $Sid; ?>"><?php echo htmlspecialchars($Xname); ?></a>
+      <?php if (!$isMain) : ?>
+        <span class="explainer">-
+          <?php echo htmlspecialchars($XrelPurpose); ?>
+          <?php echo htmlspecialchars($XnoteName); ?></span>
+      <?php endif ?>
       <?php if ($isAuthenticated && !$isMain && $mode == REL_EDITOR) : ?>
         <?php printRelDeleteForm($SrelCoreId); ?>
       <?php endif; ?>
@@ -495,6 +398,19 @@ function printFullNote($Sid, $Xname, $isMain, $Xdescription = null,
   <?php
 }
 
+function printRelDeleteForm($SrelCoreId) {
+  global $SnoteId;
+  ?>
+  <form>
+    <input type="hidden" name="mode" value="<?php echo DELETE_REL; ?>" />
+    <input type="hidden" name="note" value="<?php echo $SnoteId; ?>" />
+    <input type="hidden" name="rel_core_id" value="<?php
+        echo $SrelCoreId; ?>" />
+    <input type="submit" value="X" />
+  </form>
+  <?php
+}
+
 /**
  * !!! A very inefficient implementation, this can probably be done with a few
  *     complex SQL calls. Instead of retreving all the relations then looping
@@ -529,34 +445,6 @@ function cloneRels($SoldNoteId) {
       relateTheseById($assoc['noteId'], $assoc['relTypeId'], $SnoteId);
     }
   }
-}
-
-function printShortNote($Sid, $Xname, $SrelCoreId = null) {
-  global $mode;
-  $isAuthenticated = authenticateSessionUser();
-  ?>
-  <div>
-    <a href="<?php echo $_SERVER['SCRIPT_NAME'] . '?note=' . $Sid; ?>">
-      <?php echo htmlspecialchars($Xname); ?>
-    </a>
-    <?php if ($isAuthenticated && $mode == REL_EDITOR && $SrelCoreId) : ?>
-      <?php printRelDeleteForm($SrelCoreId); ?>
-    <?php endif; ?>
-  </div>
-  <?php
-}
-
-function printRelDeleteForm($SrelCoreId) {
-  global $SnoteId;
-  ?>
-  <form>
-    <input type="hidden" name="mode" value="<?php echo DELETE_REL; ?>" />
-    <input type="hidden" name="note" value="<?php echo $SnoteId; ?>" />
-    <input type="hidden" name="rel_core_id" value="<?php
-        echo $SrelCoreId; ?>" />
-    <input type="submit" value="X" />
-  </form>
-  <?php
 }
 
 /**
@@ -665,20 +553,5 @@ function savePostedNoteToDb($mode) {
         Please check it\'s validity and try again. ';
     return $postProblemMsg;
   }
-}
-
-/**
- * Currently no default note functionality is available, the test db
- * implementation has the concept of a "home" parent note but at the moment
- * that's not a type understood by RN.
- * !!! MUST BE IMPLEMENTED CORRECTLY !!!
- * returns: the id of the latest note added to the DB.
- */
-function getDefaultNoteId() {
-  global $db;
-  $res = $db->query(
-      'SELECT MAX(id) AS max_id
-       FROM notes') or handleIt($db->error);
-  return $res->fetch_assoc()['max_id'];
 }
 ?>

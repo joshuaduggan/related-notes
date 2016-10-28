@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Host: 127.0.0.1
--- Generation Time: Oct 14, 2016 at 03:48 AM
+-- Generation Time: Oct 28, 2016 at 04:36 AM
 -- Server version: 10.1.10-MariaDB
 -- PHP Version: 5.6.19
 
@@ -84,6 +84,25 @@ INSERT INTO `notes` (`id`, `name`, `description`) VALUES
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `properties`
+--
+
+CREATE TABLE `properties` (
+  `id` int(11) NOT NULL,
+  `name` varchar(101) NOT NULL,
+  `value` varchar(255) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+--
+-- Dumping data for table `properties`
+--
+
+INSERT INTO `properties` (`id`, `name`, `value`) VALUES
+(1, 'db_name', 'Web Development Technologies');
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `rel_cores`
 --
 
@@ -123,7 +142,6 @@ INSERT INTO `rel_cores` (`id`, `rel_type`) VALUES
 (155, 2),
 (157, 2),
 (159, 2),
-(165, 2),
 (167, 2),
 (169, 2),
 (177, 2),
@@ -220,8 +238,6 @@ INSERT INTO `rel_legs` (`id`, `rel_core`, `note`, `role`) VALUES
 (158, 157, 21, 'child'),
 (159, 159, 37, 'parent'),
 (160, 159, 24, 'child'),
-(165, 165, 49, 'child'),
-(166, 165, 37, 'parent'),
 (167, 167, 40, 'child'),
 (168, 167, 43, 'parent'),
 (169, 169, 40, 'child'),
@@ -278,18 +294,19 @@ INSERT INTO `rel_legs` (`id`, `rel_core`, `note`, `role`) VALUES
 CREATE TABLE `rel_types` (
   `id` int(11) NOT NULL,
   `structure` varchar(101) NOT NULL,
-  `name` varchar(101) NOT NULL
+  `name` varchar(101) NOT NULL,
+  `purpose` varchar(101) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 --
 -- Dumping data for table `rel_types`
 --
 
-INSERT INTO `rel_types` (`id`, `structure`, `name`) VALUES
-(1, 'one-one', 'Generic'),
-(2, 'one-many', 'Category'),
-(3, 'one-many', 'Home'),
-(4, 'one-many', 'Uses Language');
+INSERT INTO `rel_types` (`id`, `structure`, `name`, `purpose`) VALUES
+(1, 'one-one', 'Generic', ''),
+(2, 'one-many', 'Category', 'is a'),
+(3, 'one-many', 'Home', 'is linked from'),
+(4, 'one-many', 'Uses Language', 'is used by');
 
 -- --------------------------------------------------------
 
@@ -309,7 +326,7 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `user_email`, `user_pass_hash`, `available_time`) VALUES
-(2, 'jdoe@mail.com', '$2y$10$zx0dm/3vWvs5ArpPGobwBufe/SgX7InEvPLtX3RE7pRmiqFeBCzGO', 1476389559);
+(2, 'jdoe@mail.com', '$2y$10$zx0dm/3vWvs5ArpPGobwBufe/SgX7InEvPLtX3RE7pRmiqFeBCzGO', 1477519844);
 
 --
 -- Indexes for dumped tables
@@ -321,6 +338,13 @@ INSERT INTO `users` (`id`, `user_email`, `user_pass_hash`, `available_time`) VAL
 ALTER TABLE `notes`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `id` (`id`);
+
+--
+-- Indexes for table `properties`
+--
+ALTER TABLE `properties`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `name` (`name`);
 
 --
 -- Indexes for table `rel_cores`
@@ -355,6 +379,11 @@ ALTER TABLE `users`
 --
 ALTER TABLE `notes`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=61;
+--
+-- AUTO_INCREMENT for table `properties`
+--
+ALTER TABLE `properties`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 --
 -- AUTO_INCREMENT for table `rel_cores`
 --

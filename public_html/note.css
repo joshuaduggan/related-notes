@@ -62,7 +62,20 @@ form {
 .associate-notes {
   background-color: #FDD;
 }
+.all-notes {
+  background-color: #9F9;
+}
 .common-parent-siblings {
   background-color: #DFD;
   padding-left: 20px;
+}
+.explainer {
+  font-size: 80%;
+}
+.gd-sidebar .explainer {
+  text-indent: -2em;
+  margin-left: 2em;
+}
+.explainer .about-note {
+  font-size: 125%;
 }
